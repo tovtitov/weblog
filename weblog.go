@@ -706,7 +706,7 @@ func (w *Logger) Recover(r interface{}) {
 
 func LogPath() string { return _logPath }
 
-//project name to cut stacktrace on errors
+// project name to cut stacktrace on errors
 func SetLogMarker(marker string) {
 	if len(strings.TrimSpace(marker)) > 0 {
 		_log_mark = marker
@@ -728,7 +728,7 @@ func SetLogServerURL(url string) bool {
 		if _rxIPv4v6.MatchString(url) {
 			SERVER_URL = url
 		} else {
-			AddInfo("web server URL is invalid")
+			AddError("web server URL is invalid")
 			WriteTask()
 			return false
 		}
@@ -767,8 +767,14 @@ func SetLogLevel(level string) bool {
 // if not set, directory "logs" will be created next to the executable.
 func SetLogPath(logdir string) bool {
 
-	if len(strings.TrimSpace(logdir)) == 0 {
-		return false
+	if len(logdir) == 0 {
+		return true
+	}
+
+	logdir = strings.TrimSpace(logdir)
+
+	if len(logdir) == 0 {
+		return true
 	}
 	if !strings.HasSuffix(logdir, _path_separator) {
 		logdir = logdir + _path_separator
@@ -776,14 +782,14 @@ func SetLogPath(logdir string) bool {
 
 	err := os.MkdirAll(logdir, os.ModePerm)
 	if err != nil {
-		AddInfo(fmt.Sprintf("can not cfeate new log directory: %s\n%s", logdir, err.Error()))
+		AddError(fmt.Sprintf("can not cfeate new log directory: %s\n%s", logdir, err.Error()))
 		WriteTask()
 		return false
 	}
 
 	fileLog, _, err := createLogFile(&logdir)
 	if err != nil {
-		AddInfo(fmt.Sprintf("can not cfeate log file in new directory: %s\n%s", logdir, err.Error()))
+		AddError(fmt.Sprintf("can not cfeate log file in new directory: %s\n%s", logdir, err.Error()))
 		WriteTask()
 		return false //printError(strErr)
 	}
@@ -816,14 +822,15 @@ func InstanceID() uuid.UUID {
 // f.e.:ADTU - SRV01.2022-12-12.15-03-12.b461cc28-8bab-4c19-8e25-f4c17faf5638.log
 // by default: 2022-12-12.log
 func SetFileNameFormat(fileNameFormat string) bool {
+	fileNameFormat = strings.TrimSpace(fileNameFormat)
 	if len(fileNameFormat) == 0 {
-		return false
+		return true
 	}
 	fnf := "D"
 	if _rxFileFormat.MatchString(fileNameFormat) {
 		fnf = fileNameFormat
 	} else {
-		AddInfo("fileNameFormat parameter is invalid: expected \"A\",\"D\" or \"T\" or their combination")
+		AddError("fileNameFormat parameter is invalid: expected \"A\",\"D\" or \"T\" or their combination")
 		WriteTask()
 		return false
 	}
@@ -848,9 +855,9 @@ func GetLogFilePath() string {
 //
 // Parameters:
 //
-//- srvabbr: service abbreviation (5 letters in caps, f.e.: LOGER). Mandatory if isStandalone = false
+// - srvabbr: service abbreviation (5 letters in caps, f.e.: LOGER). Mandatory if isStandalone = false
 //
-//- isStandalone true - writes to file, writes to logserver (to files if server is inaccesable)
+// - isStandalone true - writes to file, writes to logserver (to files if server is inaccesable)
 func Initialize(srvabbr string, isStandalone bool) {
 
 	defer func() {
@@ -1441,7 +1448,7 @@ func createLogFileAgain() error {
 	fileLog, _, err := createLogFile(&_logPath)
 	if err != nil {
 		strErr = fmt.Sprintf("can not cfeate log file: %s\n%s", _logPath, err.Error())
-		AddInfo(strErr)
+		AddError(strErr)
 		WriteTask()
 		return printError(strErr)
 	}
@@ -1703,7 +1710,35 @@ func archihveFile() {
 	fdir, fname := filepath.Split(_fileLog.Name())
 	err = os.Rename(_fileLog.Name(), fdir+"_"+fname)
 	if err != nil {
-		AddInfo(err.Error())
+		AddError(err.Error())
 		WriteTask()
 	}
 }
+
+// func deleteTestLogFile() {
+// 	fp := GetLogFilePath()
+// 	if len(fp) == 0 {
+// 		return
+// 	}
+// 	var (
+// 		fi  fs.FileInfo
+// 		err error
+// 	)
+// 	if fi, err = os.Stat(fp); errors.Is(err, os.ErrNotExist) {
+// 		return
+// 	}
+// 	if fi.Size() > 1024 {
+// 		return
+// 	}
+// 	barr, err := os.ReadFile(fp)
+// 	if err != nil {
+// 		return
+// 	}
+// 	pos := strings.Index(string(barr), "\n\n")
+
+// 	diff := int(fi.Size()) - pos
+// 	if -10 < diff && diff < 10 {
+// 		os.Remove(fp)
+// 	}
+
+// }
