@@ -648,7 +648,7 @@ func (w *Logger) AddResponse(val string) {
 		return
 	}
 	buf := w.responseBuffer
-	if sz > buf.Len() {
+	if sz > buf.Cap() {
 		buf.Grow(sz)
 	}
 	buf.WriteString(val)
