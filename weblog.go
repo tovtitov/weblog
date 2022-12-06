@@ -644,7 +644,7 @@ func (w *Logger) HasRequestParseError() bool { return w.stacktraceBuffer.Len() >
 
 func (w *Logger) RequestParseError() string { return w.stacktraceBuffer.String() }
 
-// everything that user will get
+// everything that user will get (accumulation)
 func (w *Logger) AddResponse(val string) {
 
 	sz := len(val)
@@ -659,7 +659,7 @@ func (w *Logger) AddResponse(val string) {
 	// buf.WriteString(NEW_LINE)
 }
 
-// f.e. images
+// f.e. images (no accumulation)
 func (w *Logger) AddResponseBinary(val []byte) {
 
 	w.is_response_binary = true
@@ -669,6 +669,9 @@ func (w *Logger) AddResponseBinary(val []byte) {
 	}
 	buf := w.responseBuffer
 	buf.Reset()
+	if sz > buf.Cap() {
+		buf.Grow(sz)
+	}
 	buf.Write(val)
 }
 
