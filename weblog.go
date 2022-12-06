@@ -55,7 +55,9 @@ const (
 	FieldCmdLen          = 75
 	FieldMaxRequestQSLen = 1024
 	// FieldMaxTextLen      = -1
-	FieldMaxContentType = 75
+	FieldMaxContentType = 75 // rqsr, rsqt
+
+	FieldMaxIPLength = 140
 )
 
 var (
@@ -67,7 +69,7 @@ rs
 `
 	_recordDelimmiter string = "^^^"
 
-	_loglevel            int = LOG_INFO
+	_loglevel            int = LOG_TRACE
 	_muLogWrite              = &sync.Mutex{}
 	_fileLog             *os.File
 	_lastDay, _lastMonth int = 0, 0
@@ -87,7 +89,8 @@ rs
 	_rxFileFormat = regexp.MustCompile(`^[ADTU]{1,4}$`)
 	_rxUrl        = regexp.MustCompile(`^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}$`)
 	// _rxIP         = regexp.MustCompile(`^https?:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$`)
-	_rxIPv4v6 = regexp.MustCompile(`((^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s*$)|(^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$))`)
+	_rxIPv4v6        = regexp.MustCompile(`((^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s*$)|(^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$))`)
+	_rxIPv4v6_simple = regexp.MustCompile(`^[0-9.:A-Fa-f, \[\]]{1,150}$`)
 
 	// https://www.regextester.com/104038
 	// rxIp     = regexp.MustCompile(`((^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s*$)|(^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$))`)
@@ -133,7 +136,7 @@ type Logger struct {
 	serviceName string
 	loglevel    int
 
-	logRawRecord     string
+	// logRawRecord     string
 	responseBuffer   *bytes.Buffer
 	stacktraceBuffer *bytes.Buffer
 	recRawBuffer     *bytes.Buffer
@@ -152,7 +155,7 @@ func NewLogger() *Logger {
 	w.SetTime(time.Now())
 	w.SetResponseCode(200)
 	w.rqct = "text/plain"
-	w.logRawRecord = ""
+	// w.logRawRecord = ""
 	w.loglevel = _loglevel
 
 	return w
@@ -318,16 +321,12 @@ func (w *Logger) SetLatencyStr(val string) {
 func (w *Logger) Latency() int64 { return w.latency }
 
 func (w *Logger) SetIP(val string) {
-	intTmp := len(val)
-	if intTmp == 0 {
-		return
+
+	if len(val) > FieldMaxIPLength {
+		val = val[:FieldMaxIPLength]
 	}
-	if intTmp <= 39 {
+	if _rxIPv4v6_simple.MatchString(val) {
 		w.ip = val
-	} else {
-		w.stacktraceBuffer.WriteString(joinString(
-			"ip is longer then 39 (max ipv6 length). Length: ",
-			strconv.Itoa(intTmp), TAB, val, NEW_LINE))
 	}
 }
 func (w *Logger) IP() string { return w.ip }
@@ -340,12 +339,13 @@ func (w *Logger) SetRequestContentType(val string) {
 	if intTmp <= FieldMaxContentType {
 		w.rqct = val
 	} else {
-		w.stacktraceBuffer.WriteString(joinString(
-			"rqct is longer then ",
-			strconv.Itoa(FieldMaxContentType), " : ", strconv.Itoa(intTmp), NEW_LINE))
+		w.rqct = val[:FieldMaxContentType]
+		// w.stacktraceBuffer.WriteString(joinString(
+		// 	"rqct is longer then ",
+		// 	strconv.Itoa(FieldMaxContentType), " : ", strconv.Itoa(intTmp), NEW_LINE))
 	}
 }
-func (w *Logger) RequestContentType() string { return w.ip }
+func (w *Logger) RequestContentType() string { return w.rqct }
 
 func (w *Logger) SetResponseContentType(val string) {
 	intTmp := len(val)
@@ -355,9 +355,10 @@ func (w *Logger) SetResponseContentType(val string) {
 	if intTmp <= FieldMaxContentType {
 		w.rsct = val
 	} else {
-		w.stacktraceBuffer.WriteString(joinString(
-			"rsct is longer then ",
-			strconv.Itoa(FieldMaxContentType), " : ", strconv.Itoa(intTmp), NEW_LINE))
+		w.rsct = val[:FieldMaxContentType]
+		// w.stacktraceBuffer.WriteString(joinString(
+		// 	"rsct is longer then ",
+		// 	strconv.Itoa(FieldMaxContentType), " : ", strconv.Itoa(intTmp), NEW_LINE))
 	}
 }
 func (w *Logger) ResponseContentType() string { return w.rsct }
@@ -501,7 +502,7 @@ func (w *Logger) Clear() {
 	w.timeStr = ""
 
 	w.Enabled = false
-	w.logRawRecord = ""
+	// w.logRawRecord = ""
 	w.responseBuffer.Reset()
 	w.stacktraceBuffer.Reset()
 	w.recRawBuffer.Reset()
@@ -523,6 +524,7 @@ func (w *Logger) WriteRequest() {
 	}
 
 	sb := &bytes.Buffer{}
+	sb.Grow(MAX_INT_1KB)
 	// // this has to be ordered by logging data size
 	// LOG_ERROR = 1 "error" - full info only if error ocuures
 	// LOG_INFO  = 2 just query string (default) end response HTTP code
@@ -532,7 +534,9 @@ func (w *Logger) WriteRequest() {
 	strErr := ""
 	intErrorLen := 0
 	if iserr {
-		sb.Grow(w.stacktraceBuffer.Len())
+		if w.stacktraceBuffer.Len() > MAX_INT_1KB {
+			sb.Grow(w.stacktraceBuffer.Len())
+		}
 		strErr = w.stacktraceBuffer.String()
 		intErrorLen = len(strErr)
 	}
@@ -773,6 +777,10 @@ func SetLogPath(logdir string) bool {
 
 	logdir = strings.TrimSpace(logdir)
 
+	if logdir == _logPath {
+		return true
+	}
+
 	if len(logdir) == 0 {
 		return true
 	}
@@ -969,13 +977,16 @@ var _latency int64
 // latency - service start time
 func WriteStart(latency int64) *Logger {
 
-	for i := 0; i < 10; i++ {
-		if !_isWebLogSrvAvailable {
-			time.Sleep(300 * time.Millisecond)
-		} else {
-			break
+	if !_isStandalone {
+		for i := 0; i < 10; i++ {
+			if !_isWebLogSrvAvailable {
+				time.Sleep(300 * time.Millisecond)
+			} else {
+				break
+			}
 		}
 	}
+
 	_latency = latency
 	return write(1)
 }

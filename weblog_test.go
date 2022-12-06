@@ -27,7 +27,8 @@ func TestWriteRequest(t *testing.T) {
 	log.SetLatency(elapsed)
 
 	log.SetCommand("object.action")
-	log.SetIP("127.0.0.1")
+	log.SetIP("203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178")
+	fmt.Println(log.ip)
 	log.SetRequest(`some 
 	multiline 
 	request`)
