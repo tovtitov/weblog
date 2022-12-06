@@ -118,20 +118,20 @@ rs
 
 // for request/response only. Use weblog funcs for start/stop logging
 type Logger struct {
-	time               *time.Time
-	timeStr            string
-	recid              uuid.UUID
-	uid                uuid.UUID
-	code               int
-	codeStr            string
-	cmd                string
-	latency            int64
-	latencyStr         string
-	ip                 string
-	rqct               string
-	rsct               string
-	rqqs               string
-	rq                 string
+	time       *time.Time
+	timeStr    string
+	recid      uuid.UUID
+	uid        uuid.UUID
+	code       int
+	codeStr    string
+	cmd        string
+	latency    int64
+	latencyStr string
+	ip         string
+	rqct       string
+	rsct       string
+	rqqs       string
+	// rq                 string
 	is_response_binary bool // for images
 	is_request_binary  bool // for images
 
@@ -151,8 +151,10 @@ func NewLogger() *Logger {
 
 	w := &Logger{}
 	w.Enabled = true
+	w.requestBuffer = &bytes.Buffer{}
 	w.responseBuffer = &bytes.Buffer{}
 	w.recRawBuffer = &bytes.Buffer{}
+	w.requestBuffer.Grow(MAX_INT_10KB)
 	w.responseBuffer.Grow(MAX_INT_10KB)
 	w.stacktraceBuffer = &bytes.Buffer{}
 	w.stacktraceBuffer.Grow(MAX_INT_10KB)
@@ -161,6 +163,8 @@ func NewLogger() *Logger {
 	w.rqct = "text/plain"
 	// w.logRawRecord = ""
 	w.loglevel = _loglevel
+	w.is_request_binary = false
+	w.is_response_binary = false
 
 	return w
 }
@@ -180,7 +184,8 @@ func (w *Logger) GobEncode() ([]byte, error) {
 	encoder.Encode(&w.rqct)
 	encoder.Encode(&w.rsct)
 	encoder.Encode(&w.rqqs)
-	encoder.Encode(&w.rq)
+	// encoder.Encode(&w.rq)
+	encoder.Encode(w.requestBuffer.String())
 	encoder.Encode(w.responseBuffer.String())
 	encoder.Encode(w.stacktraceBuffer.String())
 	encoder.Encode(w.recRawBuffer.String())
@@ -200,12 +205,17 @@ func (w *Logger) GobDecode(buf []byte) error {
 	decoder.Decode(&w.rqct)
 	decoder.Decode(&w.rsct)
 	decoder.Decode(&w.rqqs)
-	decoder.Decode(&w.rq)
+	// decoder.Decode(&w.rq)
 	var str string
+	w.requestBuffer = &bytes.Buffer{}
 	w.responseBuffer = &bytes.Buffer{}
 	w.recRawBuffer = &bytes.Buffer{}
+	w.requestBuffer.Grow(MAX_INT_10KB)
 	w.responseBuffer.Grow(MAX_INT_10KB)
 	w.stacktraceBuffer = &bytes.Buffer{}
+
+	decoder.Decode(&str)
+	w.requestBuffer.WriteString(str)
 	decoder.Decode(&str)
 	w.responseBuffer.WriteString(str)
 	decoder.Decode(&str)
@@ -421,9 +431,13 @@ func (w *Logger) IsRequestBinary() bool {
 	return w.is_request_binary
 }
 
-func (w *Logger) SetRequestBinary(val []byte) {
+// it is set by application. Because there is no reliable way to define if request is binary,
+// application function should set this flag explicitly. False by default.
+func (w *Logger) SetIsRequestBinary(val bool) {
+	w.is_request_binary = val
+}
+func (w *Logger) SetRequest(val []byte) {
 
-	w.is_request_binary = true
 	sz := len(val)
 	if sz == 0 {
 		return
@@ -436,29 +450,47 @@ func (w *Logger) SetRequestBinary(val []byte) {
 	buf.Write(val)
 }
 
-func (w *Logger) SetRequest(val string) {
+// func (w *Logger) SetRequest(val string) {
 
-	// intTmp := len(val)
-	// if intTmp == 0 {
-	// 	return
-	// }
-	w.rq = val // logger may be used as dto
+// 	// intTmp := len(val)
+// 	// if intTmp == 0 {
+// 	// 	return
+// 	// }
 
-	// if FieldMaxTextLen > -1 {
-	// 	if intTmp <= FieldMaxTextLen {
-	// 		w.rq = val
-	// 	} else {
-	// 		w.stacktraceBuffer.WriteString(joinString(
-	// 			"rq is longer then ",
-	// 			strconv.Itoa(FieldMaxTextLen), " : ", strconv.Itoa(intTmp), NEW_LINE))
-	// 	}
-	// } else {
-	// 	w.rq = val
-	// }
-}
-func (w *Logger) Request() string { return w.rq }
+// 	w.rq = val // logger may be used as dto
+
+//		// if FieldMaxTextLen > -1 {
+//		// 	if intTmp <= FieldMaxTextLen {
+//		// 		w.rq = val
+//		// 	} else {
+//		// 		w.stacktraceBuffer.WriteString(joinString(
+//		// 			"rq is longer then ",
+//		// 			strconv.Itoa(FieldMaxTextLen), " : ", strconv.Itoa(intTmp), NEW_LINE))
+//		// 	}
+//		// } else {
+//		// 	w.rq = val
+//		// }
+//	}
+func (w *Logger) Request() []byte { return w.requestBuffer.Bytes() }
 
 func (w *Logger) SetResponse(val string) { w.AddResponse(val) }
+
+// f.e. images (no accumulation)
+func (w *Logger) SetResponseBinary(val []byte) {
+
+	w.is_response_binary = true
+	sz := len(val)
+	if sz == 0 {
+		return
+	}
+	buf := w.responseBuffer
+	buf.Reset()
+	remains := buf.Cap() - buf.Len()
+	if sz > remains {
+		buf.Grow(sz + buf.Len())
+	}
+	buf.Write(val)
+}
 func (w *Logger) Response() string       { return w.responseBuffer.String() }
 func (w *Logger) ResponseBinary() []byte { return w.responseBuffer.Bytes() }
 func (w *Logger) HasResponse() bool      { return w.responseBuffer.Len() > 0 }
@@ -517,7 +549,7 @@ func (w *Logger) Clear() {
 	w.mapQS = nil
 	w.recid = uuid.Nil
 	w.uid = uuid.Nil
-	w.rq = ""
+	// w.rq = ""
 	w.rqct = ""
 	w.rsct = ""
 	w.rqqs = ""
@@ -526,6 +558,7 @@ func (w *Logger) Clear() {
 
 	w.Enabled = false
 	// w.logRawRecord = ""
+	w.requestBuffer.Reset()
 	w.responseBuffer.Reset()
 	w.stacktraceBuffer.Reset()
 	w.recRawBuffer.Reset()
@@ -534,6 +567,7 @@ func (w *Logger) Clear() {
 
 // FUNCTIONS
 
+// writes request data to log after app execution
 func (w *Logger) WriteRequest() {
 
 	var (
@@ -563,48 +597,61 @@ func (w *Logger) WriteRequest() {
 		strErr = w.stacktraceBuffer.String()
 		intErrorLen = len(strErr)
 	}
-
-	if !iserr && w.loglevel != LOG_INFO {
-		strReq = w.Request()
-		if !iserr && w.loglevel == LOG_TRACE {
-			if len(strReq) > MAX_INT_1KB {
-				sb.Grow(MAX_INT_1KB)
+	intResponseLen := 0
+	intRequestLen := 0
+	if w.loglevel != LOG_INFO {
+		if !w.is_request_binary {
+			strReq = string(w.Request())
+			intRequestLen = len(strReq)
+			if !iserr && w.loglevel == LOG_TRACE && intRequestLen > MAX_INT_1KB {
+				sb.Grow(sb.Cap() + MAX_INT_1KB)
 				sb.WriteString(strReq[:800])
 				sb.WriteString(NEW_LINE)
 				sb.WriteString("...")
 				sb.WriteString(NEW_LINE)
 				sb.WriteString(strReq[len(strReq)-200:])
-				w.SetRequest(sb.String())
+				intRequestLen = sb.Len()
+				w.SetRequest([]byte(sb.String()))
 				sb.Reset()
+			} else {
+				w.SetRequest([]byte(strReq))
 			}
 		} else {
-			w.SetRequest(strReq)
+			str := "binary request. Size: " + strconv.Itoa(len(w.Request()))
+			intRequestLen = len(str)
+			w.SetRequest([]byte(str))
 		}
-		strResponse = w.responseBuffer.String()
-		intResponseLen := len(strResponse)
-		if !iserr && w.loglevel == LOG_TRACE && intResponseLen > MAX_INT_1KB {
-			sb.Grow(MAX_INT_1KB)
-			sb.WriteString(strResponse[:800])
-			sb.WriteString(NEW_LINE)
-			sb.WriteString("...")
-			sb.WriteString(NEW_LINE)
-			sb.WriteString(strResponse[intResponseLen-200:])
-			strResponse = sb.String()
-			w.SetResponse(strResponse)
-			sb.Reset()
+
+		intResponseLen = w.responseBuffer.Len()
+		if !w.is_request_binary {
+			strResponse = w.responseBuffer.String()
+			if !iserr && w.loglevel == LOG_TRACE && intResponseLen > MAX_INT_1KB {
+				sb.Grow(MAX_INT_1KB)
+				sb.WriteString(strResponse[:800])
+				sb.WriteString(NEW_LINE)
+				sb.WriteString("...")
+				sb.WriteString(NEW_LINE)
+				sb.WriteString(strResponse[intResponseLen-200:])
+				strResponse = sb.String()
+				intResponseLen = sb.Len()
+				w.SetResponse(strResponse)
+				sb.Reset()
+			} else {
+				w.SetResponse(strResponse)
+			}
 		} else {
-			w.SetResponse(strResponse)
+			str := "binary response. Size: " + strconv.Itoa(len(w.ResponseBinary()))
+			intResponseLen = len(str)
+			w.SetResponse(str)
 		}
 	}
 
 	strIP := w.ip
 	intLen := len(w.timeStr) + len(w.latencyStr) + len(strIP) + len(w.cmd) +
-		len(strReq) + len(strResponse) + intErrorLen + 100
+		intResponseLen + intResponseLen + intErrorLen + 100
 	if intLen > sb.Cap() {
-		sb.Grow(intLen)
+		sb.Grow(sb.Len() + intLen)
 	}
-
-	// _lblError
 
 	sb.WriteString(_recordDelimmiter)
 	sb.WriteString(_tagDelimiters[0])
@@ -645,7 +692,7 @@ func (w *Logger) WriteRequest() {
 			sb.WriteString(w.rqqs)
 		case "rq":
 			sb.WriteString("rq:")
-			sb.WriteString(w.rq)
+			sb.WriteString(string(w.requestBuffer.Bytes()))
 		case "rs":
 			sb.WriteString("rs:")
 			if intErrorLen == 0 {
@@ -674,29 +721,14 @@ func (w *Logger) AddResponse(val string) {
 	if sz == 0 {
 		return
 	}
-	buf := w.responseBuffer
-	if sz > buf.Cap() {
-		buf.Grow(sz)
-	}
-	buf.WriteString(val)
-	// buf.WriteString(NEW_LINE)
-}
 
-// f.e. images (no accumulation)
-func (w *Logger) AddResponseBinary(val []byte) {
-
-	w.is_response_binary = true
-	sz := len(val)
-	if sz == 0 {
-		return
-	}
 	buf := w.responseBuffer
-	// buf.Reset()
 	remains := buf.Cap() - buf.Len()
 	if sz > remains {
 		buf.Grow(sz + buf.Len())
 	}
-	buf.Write(val)
+
+	buf.WriteString(val)
 }
 
 // for the log only, not for the client
@@ -1146,7 +1178,7 @@ func ParseLogRecordData(cols []string, vals []string) *Logger {
 		case "rqqs":
 			rec.SetRequestQS(vals[i])
 		case "rq":
-			rec.SetRequest(vals[i])
+			rec.SetRequest([]byte(vals[i]))
 		case "rs":
 			rec.SetResponse(vals[i])
 		default:

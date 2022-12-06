@@ -29,9 +29,9 @@ func TestWriteRequest(t *testing.T) {
 	log.SetCommand("object.action")
 	log.SetIP("203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178")
 	fmt.Println(log.ip)
-	log.SetRequest(`some 
+	log.SetRequest([]byte(`some 
 	multiline 
-	request`)
+	request`))
 	log.AddResponse(`some 
 	multiline 
 	response`)
