@@ -54,6 +54,8 @@ const (
 
 	FieldCmdLen          = 75
 	FieldMaxRequestQSLen = 1024
+	FieldMaxRequestLen   = 10485760
+
 	// FieldMaxTextLen      = -1
 	FieldMaxContentType = 75 // rqsr, rsqt
 
@@ -131,6 +133,7 @@ type Logger struct {
 	rqqs               string
 	rq                 string
 	is_response_binary bool // for images
+	is_request_binary  bool // for images
 
 	Enabled     bool // true by default. Set false not to log
 	serviceName string
@@ -138,6 +141,7 @@ type Logger struct {
 
 	// logRawRecord     string
 	responseBuffer   *bytes.Buffer
+	requestBuffer    *bytes.Buffer
 	stacktraceBuffer *bytes.Buffer
 	recRawBuffer     *bytes.Buffer
 	mapQS            url.Values
@@ -413,6 +417,25 @@ func (w *Logger) RequestQS() string { return w.rqqs }
 
 func (w *Logger) RequestQSGetValue(key string) string { return w.mapQS.Get(key) }
 
+func (w *Logger) IsRequestBinary() bool {
+	return w.is_request_binary
+}
+
+func (w *Logger) SetRequestBinary(val []byte) {
+
+	w.is_request_binary = true
+	sz := len(val)
+	if sz == 0 {
+		return
+	}
+	buf := w.requestBuffer
+	buf.Reset()
+	if sz > buf.Cap() {
+		buf.Grow(sz)
+	}
+	buf.Write(val)
+}
+
 func (w *Logger) SetRequest(val string) {
 
 	// intTmp := len(val)
@@ -668,9 +691,10 @@ func (w *Logger) AddResponseBinary(val []byte) {
 		return
 	}
 	buf := w.responseBuffer
-	buf.Reset()
-	if sz > buf.Cap() {
-		buf.Grow(sz)
+	// buf.Reset()
+	remains := buf.Cap() - buf.Len()
+	if sz > remains {
+		buf.Grow(sz + buf.Len())
 	}
 	buf.Write(val)
 }
@@ -956,7 +980,10 @@ func AddInfo(val string) {
 		return
 	}
 	buf := _infoMessageBuf
-	buf.Grow(sz)
+	diff := buf.Cap() - buf.Len()
+	if len(val) > diff {
+		buf.Grow(sz + buf.Len() + 10)
+	}
 	buf.WriteString(val)
 	buf.WriteString(NEW_LINE)
 }
@@ -969,7 +996,10 @@ func AddError(val string) {
 		return
 	}
 	buf := _errorMessageBuf
-	buf.Grow(sz + 2)
+	diff := buf.Cap() - buf.Len()
+	if len(val) > diff {
+		buf.Grow(sz + buf.Len() + 10)
+	}
 	buf.WriteString(val)
 	buf.WriteString(NEW_LINE)
 }
@@ -1129,10 +1159,14 @@ func ParseLogRecordData(cols []string, vals []string) *Logger {
 		for _, v := range vals {
 			intLen = intLen + len(v)
 		}
-		rec.recRawBuffer.Grow(intLen + 100)
+		buf := rec.recRawBuffer
+		diff := buf.Cap() - buf.Len()
+		if intLen > diff {
+			buf.Grow(intLen + buf.Len() + len(vals)*2)
+		}
 		for _, v := range vals {
-			rec.recRawBuffer.WriteString(v)
-			rec.recRawBuffer.WriteString(NEW_LINE)
+			buf.WriteString(v)
+			buf.WriteString(NEW_LINE)
 		}
 	}
 	return rec
@@ -1581,9 +1615,7 @@ func write(mode int) *Logger {
 	intErr := len(strErr)
 
 	intLen := intInfo + intErr
-	if intLen > sb.Cap() {
-		sb.Grow(intLen)
-	}
+	sb.Grow(intLen)
 
 	logger := NewLogger()
 
