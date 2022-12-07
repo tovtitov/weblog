@@ -601,8 +601,6 @@ func (w *Logger) WriteRequest() {
 	intRequestLen := 0
 	if w.loglevel != LOG_INFO {
 		if !w.is_request_binary {
-			strReq = string(w.Request())
-			intRequestLen = len(strReq)
 			if !iserr && w.loglevel == LOG_TRACE && intRequestLen > MAX_INT_1KB {
 				sb.Grow(sb.Cap() + MAX_INT_1KB)
 				sb.WriteString(strReq[:800])
@@ -611,20 +609,18 @@ func (w *Logger) WriteRequest() {
 				sb.WriteString(NEW_LINE)
 				sb.WriteString(strReq[len(strReq)-200:])
 				intRequestLen = sb.Len()
-				w.SetRequest([]byte(sb.String()))
+				strReq = sb.String()
 				sb.Reset()
 			} else {
-				w.SetRequest([]byte(strReq))
+				intRequestLen = len(strReq)
+				strReq = string(w.Request())
 			}
 		} else {
 			str := "binary request. Size: " + strconv.Itoa(len(w.Request()))
 			intRequestLen = len(str)
-			w.SetRequest([]byte(str))
+			strReq = str
 		}
-
-		intResponseLen = w.responseBuffer.Len()
-		if !w.is_request_binary {
-			strResponse = w.responseBuffer.String()
+		if !w.is_response_binary {
 			if !iserr && w.loglevel == LOG_TRACE && intResponseLen > MAX_INT_1KB {
 				sb.Grow(MAX_INT_1KB)
 				sb.WriteString(strResponse[:800])
@@ -632,17 +628,18 @@ func (w *Logger) WriteRequest() {
 				sb.WriteString("...")
 				sb.WriteString(NEW_LINE)
 				sb.WriteString(strResponse[intResponseLen-200:])
-				strResponse = sb.String()
 				intResponseLen = sb.Len()
+				strResponse = sb.String()
 				w.SetResponse(strResponse)
 				sb.Reset()
 			} else {
-				w.SetResponse(strResponse)
+				intResponseLen = w.responseBuffer.Len()
+				strResponse = w.responseBuffer.String()
 			}
 		} else {
 			str := "binary response. Size: " + strconv.Itoa(len(w.ResponseBinary()))
 			intResponseLen = len(str)
-			w.SetResponse(str)
+			strResponse = str
 		}
 	}
 
@@ -692,7 +689,7 @@ func (w *Logger) WriteRequest() {
 			sb.WriteString(w.rqqs)
 		case "rq":
 			sb.WriteString("rq:")
-			sb.WriteString(string(w.requestBuffer.Bytes()))
+			sb.WriteString(strReq)
 		case "rs":
 			sb.WriteString("rs:")
 			if intErrorLen == 0 {

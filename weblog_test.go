@@ -32,10 +32,11 @@ func TestWriteRequest(t *testing.T) {
 	log.SetRequest([]byte(`some 
 	multiline 
 	request`))
-	log.AddResponse(`some 
+	log.SetResponseBinary([]byte(`some 
 	multiline 
-	response`)
+	response`))
 	log.SetRequestQS("qqq=wwww&eee=rrr")
+	log.SetIsRequestBinary(true)
 	log.SetResponseCode(200)
 	log.SetRequestContentType("text/plain")
 	log.SetResponseContentType("application/json")
