@@ -1008,6 +1008,7 @@ func Initialize(srvabbr string, isStandalone bool) {
 
 // on application start / stop
 func AddInfo(val string) {
+	fmt.Println(val)
 	sz := len(val)
 	if sz == 0 {
 		return
