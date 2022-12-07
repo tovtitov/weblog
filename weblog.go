@@ -431,6 +431,10 @@ func (w *Logger) IsRequestBinary() bool {
 	return w.is_request_binary
 }
 
+func (w *Logger) Error() string {
+	return w.stacktraceBuffer.String()
+}
+
 // it is set by application. Because there is no reliable way to define if request is binary,
 // application function should set this flag explicitly. False by default.
 func (w *Logger) SetIsRequestBinary(val bool) {
