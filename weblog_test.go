@@ -42,7 +42,7 @@ func TestWriteRequest(t *testing.T) {
 	log.SetResponseContentType("application/json")
 
 	log.WriteRequest()
-	log.Reset()
+	log.Close()
 	Close()
 
 }
