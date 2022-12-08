@@ -542,7 +542,7 @@ func (w *Logger) Close() {
 }
 
 // clears all fields
-func (w *Logger) Reset() {
+func (w *Logger) Clear() {
 
 	w.code = 0
 	w.cmd = ""
