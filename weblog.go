@@ -533,7 +533,7 @@ func (w *Logger) SetLogLevel(level string) {
 }
 
 // clears all fields and sets buffers to nil
-func (w *Logger) Close() {
+func (w *Logger) Reset() {
 
 	w.Clear()
 	w.responseBuffer = nil
