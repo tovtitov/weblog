@@ -601,8 +601,8 @@ func (w *Logger) WriteRequest() {
 		strErr = w.stacktraceBuffer.String()
 		intErrorLen = len(strErr)
 	}
-	intResponseLen := 0
-	intRequestLen := 0
+	intResponseLen := w.responseBuffer.Len()
+	intRequestLen := w.requestBuffer.Len()
 	if w.loglevel != LOG_INFO {
 		if !w.is_request_binary {
 			if !iserr && w.loglevel == LOG_TRACE && intRequestLen > MAX_INT_1KB {
