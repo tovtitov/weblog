@@ -575,9 +575,9 @@ func (w *Logger) Clear() {
 func (w *Logger) WriteRequest() {
 
 	var (
-		iserr       = w.stacktraceBuffer.Len() > 0
-		strResponse string
-		strReq      string
+		iserr              = w.stacktraceBuffer.Len() > 0
+		strResponse string = w.responseBuffer.String()
+		strReq      string = w.requestBuffer.String()
 	)
 
 	if w.loglevel == LOG_ERROR && !iserr {
@@ -617,7 +617,7 @@ func (w *Logger) WriteRequest() {
 				sb.Reset()
 			} else {
 				intRequestLen = len(strReq)
-				strReq = string(w.Request())
+				// strReq = string(w.Request())
 			}
 		} else {
 			str := "binary request. Size: " + strconv.Itoa(len(w.Request()))
@@ -638,7 +638,7 @@ func (w *Logger) WriteRequest() {
 				sb.Reset()
 			} else {
 				intResponseLen = w.responseBuffer.Len()
-				strResponse = w.responseBuffer.String()
+				// strResponse = w.responseBuffer.String()
 			}
 		} else {
 			str := "binary response. Size: " + strconv.Itoa(len(w.ResponseBinary()))
@@ -649,7 +649,7 @@ func (w *Logger) WriteRequest() {
 
 	strIP := w.ip
 	intLen := len(w.timeStr) + len(w.latencyStr) + len(strIP) + len(w.cmd) +
-		intResponseLen + intResponseLen + intErrorLen + 100
+		intRequestLen + intResponseLen + intErrorLen + 100
 	if intLen > sb.Cap() {
 		sb.Grow(sb.Len() + intLen)
 	}
