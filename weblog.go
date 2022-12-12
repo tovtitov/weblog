@@ -575,9 +575,9 @@ func (w *Logger) Clear() {
 func (w *Logger) WriteRequest() {
 
 	var (
-		iserr              = w.stacktraceBuffer.Len() > 0
-		strResponse string = w.responseBuffer.String()
-		strReq      string = w.requestBuffer.String()
+		iserr       = w.stacktraceBuffer.Len() > 0
+		strResponse string
+		strReq      string
 	)
 
 	if w.loglevel == LOG_ERROR && !iserr {
@@ -601,9 +601,13 @@ func (w *Logger) WriteRequest() {
 		strErr = w.stacktraceBuffer.String()
 		intErrorLen = len(strErr)
 	}
-	intResponseLen := w.responseBuffer.Len()
-	intRequestLen := w.requestBuffer.Len()
+	var (
+		intResponseLen int
+		intRequestLen  int
+	)
 	if w.loglevel != LOG_INFO {
+		strResponse = w.responseBuffer.String()
+		strReq = w.requestBuffer.String()
 		if !w.is_request_binary {
 			if !iserr && w.loglevel == LOG_TRACE && intRequestLen > MAX_INT_1KB {
 				sb.Grow(sb.Cap() + MAX_INT_1KB)
