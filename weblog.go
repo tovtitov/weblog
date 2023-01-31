@@ -608,6 +608,8 @@ func (w *Logger) WriteRequest() {
 	if w.loglevel != LOG_INFO {
 		strResponse = w.responseBuffer.String()
 		strReq = w.requestBuffer.String()
+		intResponseLen = len(strResponse)
+		intRequestLen = len(strReq)
 		if !w.is_request_binary {
 			if !iserr && w.loglevel == LOG_TRACE && intRequestLen > MAX_INT_1KB {
 				sb.Grow(sb.Cap() + MAX_INT_1KB)
