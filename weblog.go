@@ -737,6 +737,9 @@ func (w *Logger) AddResponse(val string) {
 
 	buf.WriteString(val)
 }
+func (w *Logger) ClearResponse() {
+	w.responseBuffer.Reset()
+}
 
 // for the log only, not for the client
 func (w *Logger) AddStacktrace(errmsg string) *Logger {
