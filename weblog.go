@@ -717,9 +717,11 @@ func (w *Logger) WriteRequest() {
 	res = ""
 }
 
-func (w *Logger) HasRequestParseError() bool { return w.stacktraceBuffer.Len() > 0 }
+// has application error with http cover 500 and hier
+func (w *Logger) HasSystemError() bool { return w.stacktraceBuffer.Len() > 0 }
 
-func (w *Logger) RequestParseError() string { return w.stacktraceBuffer.String() }
+// application error with http cover 500 and hier
+func (w *Logger) SystemError() string { return w.stacktraceBuffer.String() }
 
 // everything that user will get (accumulation)
 func (w *Logger) AddResponse(val string) {
@@ -1307,11 +1309,11 @@ func ParseLogRecordString(logRec *string, returnObjectOnError bool) (*Logger, er
 
 	oLog := ParseLogRecordData(oLogHeader.Columns, arrVals)
 
-	if oLog.HasRequestParseError() {
+	if oLog.HasSystemError() {
 		if returnObjectOnError {
-			return oLog, errors.New(oLog.RequestParseError())
+			return oLog, errors.New(oLog.SystemError())
 		}
-		return nil, errors.New(oLog.RequestParseError())
+		return nil, errors.New(oLog.SystemError())
 	}
 	return oLog, nil
 
