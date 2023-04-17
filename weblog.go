@@ -702,11 +702,12 @@ func (w *Logger) WriteRequest() {
 			sb.WriteString(strReq)
 		case "rs":
 			sb.WriteString("rs:")
-			if intErrorLen == 0 {
-				sb.WriteString(strResponse)
-			} else {
+			if intErrorLen > 0 {
+				sb.WriteString("error: \n")
 				sb.WriteString(strErr)
+				sb.WriteString("response: \n")
 			}
+			sb.WriteString(strResponse)
 		}
 		sb.WriteString(_tagDelimiters[i])
 	}
@@ -717,10 +718,10 @@ func (w *Logger) WriteRequest() {
 	res = ""
 }
 
-// has application error with http cover 500 and hier
+// has application error with http code over 500 and hier
 func (w *Logger) HasSystemError() bool { return w.stacktraceBuffer.Len() > 0 }
 
-// application error with http cover 500 and hier
+// application error with http code over 500 and hier
 func (w *Logger) SystemError() string { return w.stacktraceBuffer.String() }
 
 // everything that user will get (accumulation)
