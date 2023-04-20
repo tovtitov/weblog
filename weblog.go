@@ -640,6 +640,7 @@ func (w *Logger) WriteRequest() {
 				sb.WriteString(strResponse[intResponseLen-200:])
 				intResponseLen = sb.Len()
 				strResponse = sb.String()
+				w.ClearResponse()
 				w.SetResponse(strResponse)
 				sb.Reset()
 			} else {
@@ -822,7 +823,7 @@ func SetLogLevel(level string) bool {
 	if len(level) == 0 {
 		return false
 	}
-	switch level {
+	switch strings.ToLower(level) {
 	case "info":
 		_loglevel = LOG_INFO
 		return true
