@@ -640,8 +640,6 @@ func (w *Logger) WriteRequest() {
 				sb.WriteString(strResponse[intResponseLen-200:])
 				intResponseLen = sb.Len()
 				strResponse = sb.String()
-				w.ClearResponse()
-				w.SetResponse(strResponse)
 				sb.Reset()
 			} else {
 				intResponseLen = w.responseBuffer.Len()
