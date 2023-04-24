@@ -59,7 +59,7 @@ const (
 	// FieldMaxTextLen      = -1
 	FieldMaxContentType = 75 // rqsr, rsqt
 
-	FieldMaxIPLength = 140
+	FieldMaxIPLength = 250
 )
 
 var (
@@ -336,12 +336,26 @@ func (w *Logger) Latency() int64 { return w.latency }
 
 func (w *Logger) SetIP(val string) {
 
+	if strings.Contains(val, ",") {
+		sb := &bytes.Buffer{}
+		for _, strip := range strings.Split(val, ",") {
+			if _rxIPv4v6_simple.MatchString(strip) {
+				sb.WriteString(strip)
+				sb.WriteString(",")
+			}
+		}
+		val = string((sb.Bytes()[:sb.Len()-1]))
+		sb.Reset()
+		sb = nil
+	} else {
+		if !_rxIPv4v6_simple.MatchString(val) {
+			w.ip = "0.0.0.0"
+		}
+	}
 	if len(val) > FieldMaxIPLength {
 		val = val[:FieldMaxIPLength]
 	}
-	if _rxIPv4v6_simple.MatchString(val) {
-		w.ip = val
-	}
+	w.ip = val
 }
 func (w *Logger) IP() string { return w.ip }
 
