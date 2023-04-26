@@ -468,15 +468,14 @@ func (w *Logger) SetRequest(val []byte) {
 	buf.Write(val)
 }
 
-// add additional client info to identify request in log
-func (w *Logger) AddRequestMark(val string) {
+// add additional info log
+func (w *Logger) AddToLog(val string) {
 
 	sz := len(val)
 	if sz == 0 {
 		return
 	}
 	buf := w.requestBuffer
-	buf.WriteString("\nclient:")
 	buf.WriteString(val)
 }
 
