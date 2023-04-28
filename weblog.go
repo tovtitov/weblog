@@ -774,6 +774,7 @@ func (w *Logger) AddStacktrace(errmsg string) *Logger {
 	buf := w.stacktraceBuffer
 	// buf.WriteString(NewLine)
 	if len(errmsg) > 0 {
+		buf.WriteString("ERROR:")
 		buf.WriteString(errmsg)
 		buf.WriteString(NEW_LINE)
 	}
