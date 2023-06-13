@@ -122,6 +122,7 @@ type Logger struct {
 	timeStr    string
 	recid      uuid.UUID
 	uid        uuid.UUID
+	user       interface{}
 	code       int
 	codeStr    string
 	cmd        string
@@ -406,6 +407,7 @@ func (w *Logger) SetRequestIdStr(val string) {
 }
 func (w *Logger) RequestId() uuid.UUID { return w.recid }
 
+func (w *Logger) SetUser(val interface{}) { w.user = val }
 func (w *Logger) SetUserId(val uuid.UUID) { w.uid = val }
 func (w *Logger) SetUserIdStr(val string) {
 	if len(val) == 0 {
@@ -419,6 +421,7 @@ func (w *Logger) SetUserIdStr(val string) {
 			"uid: ", err.Error(), NEW_LINE))
 	}
 }
+func (w *Logger) User() interface{} { return w.user }
 func (w *Logger) UserId() uuid.UUID { return w.uid }
 
 func (w *Logger) SetRequestQS(val string) {
