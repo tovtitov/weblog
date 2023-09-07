@@ -3,6 +3,7 @@ package weblog
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +13,20 @@ import (
 )
 
 // /Users/titov/Code/NewSecretProject/docs/1.2_Logging.txt
+
+func TestWriteCycle(t *testing.T) {
+
+	// "/Users/titov/Code/NewSecretProject/weblog/"
+	Initialize("LOGER", true)
+
+	for i := 0; i < 10; i++ {
+
+		msg := "very long test data " + strconv.Itoa(i)
+		LogTxtTest(&msg)
+
+	}
+	Close()
+}
 
 func TestWriteRequest(t *testing.T) {
 

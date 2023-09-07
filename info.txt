@@ -1,0 +1,3 @@
+git push -u origin --all
+from github.com/tovtitov/weblog/commits
+get github.com/tovtitov/weblog@b2b83ef360cb597207ccdd6c12721a0f2e440d01

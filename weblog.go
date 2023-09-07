@@ -986,8 +986,8 @@ func Initialize(srvabbr string, isStandalone bool) {
 			os.Exit(1)
 		}
 	}
+	_fileNameFormat = []string{"D", "T"} // default file format
 
-	_fileNameFormat = []string{"D"} // default file format
 	_infoMessageBuf = &bytes.Buffer{}
 	_errorMessageBuf = &bytes.Buffer{}
 
@@ -1564,23 +1564,46 @@ func printStackTrace(sb *bytes.Buffer) {
 	sb.WriteString("\n")
 }
 
+// func createLogFileAgain() error {
+
+//		var strErr string
+//		fileLog, _, err := createLogFile(&_logPath)
+//		if err != nil {
+//			strErr = fmt.Sprintf("can not cfeate log file: %s\n%s", _logPath, err.Error())
+//			AddError(strErr)
+//			WriteTask()
+//			return printError(strErr)
+//		}
+//		_muLogWrite.Lock()
+//		if _fileLog != nil {
+//			_ = _fileLog.Close()
+//			archihveFile()
+//			_fileLog = fileLog
+//		}
+//		_muLogWrite.Unlock()
+//		return nil
+//	}
 func createLogFileAgain() error {
 
-	var strErr string
-	fileLog, _, err := createLogFile(&_logPath)
+	_muLogWrite.Lock()
+	if _fileLog != nil {
+		_ = _fileLog.Close()
+		archihveFile()
+	}
+	_muLogWrite.Unlock()
+
+	var (
+		strErr string
+		err    error
+	)
+	_fileLog, _, err = createLogFile(&_logPath)
 	if err != nil {
 		strErr = fmt.Sprintf("can not cfeate log file: %s\n%s", _logPath, err.Error())
 		AddError(strErr)
 		WriteTask()
 		return printError(strErr)
 	}
-	_muLogWrite.Lock()
-	if _fileLog != nil {
-		_ = _fileLog.Close()
-		archihveFile()
-		_fileLog = fileLog
-	}
-	_muLogWrite.Unlock()
+
 	return nil
 }
 
@@ -1832,6 +1855,98 @@ func archihveFile() {
 	if err != nil {
 		AddError(err.Error())
 		WriteTask()
+	}
+}
+
+func LogTxtTest(msg *string) {
+
+	if !_isInitialized {
+		fmt.Println("log is not initialized!")
+		return
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Print("PANIC: logTxt: ")
+			fmt.Println(r)
+		}
+	}()
+
+	// debug
+	// fmt.Println(*msg)
+
+	idx := 1 // 10 times tries log to WebLogSrv or file
+NEXT:
+
+	// if _serviceAbbr == "LOGER" {
+	// 	sql.DB..LoadRecordToHeap(oLogRec, wrapper)
+	// }
+	if !_isStandalone && _isWebLogSrvAvailable {
+		*msg = _log_format + *msg
+		fmt.Println(*msg)
+		arr := []byte(*msg)
+		_, code, err := sendMessage(SERVER_URL+SERVER_URL_LOG_RECORD+_serviceAbbr, &arr)
+		if code == 200 && err == nil {
+			// message was sent to server successfully
+			if _fileLog != nil {
+				// no need in log file, drops logs on server
+				_muLogWrite.Lock()
+				_fileLog.Close()
+				archihveFile()
+				_fileLog = nil
+				_muLogWrite.Unlock()
+				// go sendBatch(_fileLog.Name())
+
+			}
+			return
+		}
+	}
+
+	if _fileLog == nil {
+		err := createLogFileAgain()
+		if err != nil {
+			// no service, no file/ Try 10 times before exit.
+			time.Sleep(100 * time.Millisecond)
+			if idx > 10 {
+				fmt.Println(msg)
+				return
+			}
+			idx++
+			goto NEXT
+		}
+	}
+
+	currTime := time.Now()
+	if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastMonth) /*|| TestDateFlag*/ {
+		createLogFileAgain()
+	}
+
+	// file may be closed by other thread (service became available, file was nilled)
+	if _fileLog != nil {
+		_muLogWrite.Lock()
+		if _fileLog != nil {
+			_fileLog.WriteString(*msg)
+			fmt.Println(*msg)
+		}
+		_muLogWrite.Unlock()
+		if _fileLog == nil {
+			time.Sleep(100 * time.Millisecond)
+			if idx > 10 {
+				fmt.Println(msg) // no service, no file
+				return
+			}
+			idx++
+			goto NEXT
+		}
+	} else {
+		// no service, no file/ Try 10 times before exit.
+		time.Sleep(100 * time.Millisecond)
+		if idx > 10 {
+			fmt.Println(msg) // no service, no file
+			return
+		}
+		idx++
+		goto NEXT
 	}
 }
 
