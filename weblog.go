@@ -146,6 +146,11 @@ type Logger struct {
 	stacktraceBuffer *bytes.Buffer
 	recRawBuffer     *bytes.Buffer
 	mapQS            url.Values
+
+	// w.CookiesRequest = append(w.CookiesRequest, &http.Cookie{})
+	CookiesRequest []*http.Cookie
+	// w.CookiesResponse = append(w.CookiesResponse, &http.Cookie{})
+	CookiesResponse []*http.Cookie
 }
 
 func NewLogger() *Logger {
@@ -523,6 +528,7 @@ func (w *Logger) SetResponseBinary(val []byte) {
 	}
 	buf.Write(val)
 }
+
 func (w *Logger) Response() string       { return w.responseBuffer.String() }
 func (w *Logger) ResponseBinary() []byte { return w.responseBuffer.Bytes() }
 func (w *Logger) HasResponse() bool      { return w.responseBuffer.Len() > 0 }
