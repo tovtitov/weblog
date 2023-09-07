@@ -946,6 +946,9 @@ func SetFileNameFormat(fileNameFormat string) bool {
 	for _, r := range fnf {
 		_fileNameFormat = append(_fileNameFormat, string(r))
 	}
+
+	createLogFileAgain()
+
 	return true
 }
 func IsServiceAbbreviation(srvabbr string) bool { return _rxSrvAbbr.MatchString(srvabbr) }

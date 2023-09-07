@@ -18,7 +18,7 @@ func TestWriteCycle(t *testing.T) {
 
 	// "/Users/titov/Code/NewSecretProject/weblog/"
 	Initialize("LOGER", true)
-
+	SetFileNameFormat("D")
 	for i := 0; i < 10; i++ {
 
 		msg := "very long test data " + strconv.Itoa(i)

@@ -1,3 +1,5 @@
+git add .
+git commit -m ""
 git push -u origin --all
 from github.com/tovtitov/weblog/commits
-get github.com/tovtitov/weblog@b2b83ef360cb597207ccdd6c12721a0f2e440d01
+get github.com/tovtitov/weblog@2efee3224fde10ac722772fda8c523030db35a12
