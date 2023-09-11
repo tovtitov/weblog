@@ -293,6 +293,16 @@ func (w *Logger) SetCommand(val string) {
 			strconv.Itoa(len(val)), " of ", strconv.Itoa(FieldCmdLen), TAB, val[:FieldCmdLen-1], NEW_LINE))
 	}
 }
+func (w *Logger) SetCommandIfExists(val string) {
+
+	intTmp := len(val)
+	if intTmp == 0 {
+		return
+	}
+	if intTmp <= FieldCmdLen && _rxCmd.MatchString(val) {
+		w.cmd = val
+	}
+}
 
 func (w *Logger) Command() string {
 	return w.cmd
