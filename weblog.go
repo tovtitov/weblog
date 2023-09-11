@@ -645,7 +645,8 @@ func (w *Logger) WriteRequest() {
 		intResponseLen = len(strResponse)
 		intRequestLen = len(strReq)
 		if !w.is_request_binary {
-			if !iserr && w.loglevel == LOG_TRACE && intRequestLen > MAX_INT_1KB {
+			// !iserr && remover because full html returned on 403
+			if w.loglevel == LOG_TRACE && intRequestLen > MAX_INT_1KB {
 				sb.Grow(sb.Cap() + MAX_INT_1KB)
 				sb.WriteString(strReq[:800])
 				sb.WriteString(NEW_LINE)
