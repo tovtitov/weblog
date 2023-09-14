@@ -493,7 +493,8 @@ func (w *Logger) AddToLog(val string) {
 	if sz == 0 {
 		return
 	}
-	buf := w.requestBuffer
+	buf := w.stacktraceBuffer
+	buf.WriteString("\n")
 	buf.WriteString(val)
 }
 
