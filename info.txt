@@ -2,4 +2,4 @@ git add .
 git commit -m ""
 git push -u origin --all
 from github.com/tovtitov/weblog/commits
-go get github.com/tovtitov/weblog@c72901c05832b6c15356f043cf6ec3b9e4ba609e
+go get github.com/tovtitov/weblog@c4141fd943870311e9c66d834c42d99d57251306

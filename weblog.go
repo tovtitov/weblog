@@ -75,6 +75,7 @@ rs
 	_muLogWrite              = &sync.Mutex{}
 	_fileLog             *os.File
 	_lastDay, _lastMonth int = 0, 0
+	_lastMinute          int = 0
 	_logPath             string
 	_uuidDefault         uuid.UUID //[16]byte
 	_uuidInstanceID      uuid.UUID //[16]byte
@@ -922,12 +923,8 @@ func SetLogPath(logdir string) bool {
 	}
 
 	_muLogWrite.Lock()
-	if _fileLog != nil {
-
-		_ = _fileLog.Close()
-		archihveFile()
-		_fileLog = fileLog
-	}
+	Close()
+	_fileLog = fileLog
 	_muLogWrite.Unlock()
 
 	return true
@@ -1188,7 +1185,19 @@ func _recover(r interface{}, on_start bool) {
 
 }
 
+// closes locacl log file only. If not standalone, call extended CloseServerLog() method:
+// it closes local log file and stops remote client cycle by setting flag _isAppLive to false
 func Close() {
+	if _fileLog != nil {
+		_fileLog.Sync()
+		_fileLog.Close()
+		archihveFile()
+		_fileLog = nil
+	}
+}
+
+// sets _isAppLive = false and breaks
+func CloseServerLog() {
 	if _fileLog != nil {
 		_fileLog.Sync()
 		_fileLog.Close()
@@ -1484,9 +1493,7 @@ NEXT:
 			if _fileLog != nil {
 				// no need in log file, drops logs on server
 				_muLogWrite.Lock()
-				_fileLog.Close()
-				archihveFile()
-				_fileLog = nil
+				Close()
 				_muLogWrite.Unlock()
 				// go sendBatch(_fileLog.Name())
 
@@ -1510,7 +1517,9 @@ NEXT:
 	}
 
 	currTime := time.Now()
-	if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastMonth) /*|| TestDateFlag*/ {
+	if currTime.Day() != _lastDay /*|| TestDateFlag*/ {
+		// if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastMonth) /*|| TestDateFlag*/ {
+		// if currTime.Minute() != _lastMinute /*|| TestDateFlag*/ {
 		createLogFileAgain()
 	}
 
@@ -1608,10 +1617,7 @@ func printStackTrace(sb *bytes.Buffer) {
 func createLogFileAgain() error {
 
 	_muLogWrite.Lock()
-	if _fileLog != nil {
-		_ = _fileLog.Close()
-		archihveFile()
-	}
+	Close()
 	_muLogWrite.Unlock()
 
 	var (
@@ -1682,6 +1688,7 @@ func createLogFile(logpath *string) (*os.File, bool, error) {
 	}
 	_lastDay = currTime.Day()
 	_lastMonth = int(currTime.Month())
+	_lastMinute = currTime.Minute()
 
 	if !fileExistsBefore {
 		_, err = fileLog.WriteString(_log_format) // log file write check
@@ -1913,9 +1920,7 @@ NEXT:
 			if _fileLog != nil {
 				// no need in log file, drops logs on server
 				_muLogWrite.Lock()
-				_fileLog.Close()
-				archihveFile()
-				_fileLog = nil
+				Close()
 				_muLogWrite.Unlock()
 				// go sendBatch(_fileLog.Name())
 
