@@ -71,14 +71,13 @@ rs
 `
 	_recordDelimmiter string = "^^^"
 
-	_loglevel            int = LOG_TRACE
-	_muLogWrite              = &sync.Mutex{}
-	_fileLog             *os.File
-	_lastDay, _lastMonth int = 0, 0
-	_lastMinute          int = 0
-	_logPath             string
-	_uuidDefault         uuid.UUID //[16]byte
-	_uuidInstanceID      uuid.UUID //[16]byte
+	_loglevel                        int = LOG_TRACE
+	_muLogWrite                          = &sync.Mutex{}
+	_fileLog                         *os.File
+	_lastDay, _lastHour, _lastMinute int = 0, 0, 0
+	_logPath                         string
+	_uuidDefault                     uuid.UUID //[16]byte
+	_uuidInstanceID                  uuid.UUID //[16]byte
 
 	// parsed log file default header
 	_rowtags       []string
@@ -98,14 +97,15 @@ rs
 	// https://www.regextester.com/104038
 	// rxIp     = regexp.MustCompile(`((^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s*$)|(^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$))`)
 
-	_infoMessageBuf  *bytes.Buffer
-	_errorMessageBuf *bytes.Buffer
-	_fileNameFormat  []string = []string{}
-
-	_isWebLogSrvAvailable = false
-	_isAppLive            = true
-	_isInitialized        = false
-	_isStandalone         = true // log file run on WebLogSrv
+	_infoMessageBuf       *bytes.Buffer
+	_errorMessageBuf      *bytes.Buffer
+	_fileNameFormat       []string = []string{}
+	_period               int      = 111 //111 - day, 11 - hour, 1 - minute
+	_periodCount          int      = 1
+	_isWebLogSrvAvailable          = false
+	_isAppLive                     = true
+	_isInitialized                 = false
+	_isStandalone                  = true // log file run on WebLogSrv
 
 	_mapHeaders  map[string]*logFormatInfo //parsed log file header formats
 	_serviceAbbr string
@@ -915,7 +915,7 @@ func SetLogPath(logdir string) bool {
 		return false
 	}
 
-	fileLog, _, err := createLogFile(&logdir)
+	fileLog, _, err := createLogFile(logdir)
 	if err != nil {
 		AddError(fmt.Sprintf("can not cfeate log file in new directory: %s\n%s", logdir, err.Error()))
 		WriteTask()
@@ -965,6 +965,44 @@ func SetFileNameFormat(fileNameFormat string) bool {
 
 	createLogFileAgain()
 
+	return true
+}
+
+// A - abbreviation, D - date, T - time, U - instance ID (UUID)
+// f.e.:ADTU - SRV01.2022-12-12.15-03-12.b461cc28-8bab-4c19-8e25-f4c17faf5638.log
+// by default: 2022-12-12.log
+// period - period recreate log file: minute, hour, day
+// periodCount - count of period (10 min)
+func SetFileNameFormatExt(fileNameFormat string, period string, periodCount int) bool {
+	fileNameFormat = strings.TrimSpace(fileNameFormat)
+	if len(fileNameFormat) == 0 {
+		return true
+	}
+	fnf := "D"
+	if _rxFileFormat.MatchString(fileNameFormat) {
+		fnf = fileNameFormat
+	} else {
+		AddError("fileNameFormat parameter is invalid: expected \"A\",\"D\" or \"T\" or their combination")
+		WriteTask()
+		return false
+	}
+	_fileNameFormat = nil
+	for _, r := range fnf {
+		_fileNameFormat = append(_fileNameFormat, string(r))
+	}
+
+	createLogFileAgain()
+
+	switch {
+	case period == "day":
+		_period = 111
+	case period == "hour":
+		_period = 11
+	case period == "minute":
+		_period = 1
+	}
+
+	_periodCount = periodCount
 	return true
 }
 func IsServiceAbbreviation(srvabbr string) bool { return _rxSrvAbbr.MatchString(srvabbr) }
@@ -1028,7 +1066,7 @@ func Initialize(srvabbr string, isStandalone bool) {
 
 	// validate log file accessability
 	var fileExisted = false
-	_fileLog, fileExisted, err = createLogFile(&_logPath)
+	_fileLog, fileExisted, err = createLogFile(_logPath)
 	if err != nil {
 		fmt.Printf("can not create log file: %s\n", err.Error())
 		os.Exit(1)
@@ -1188,10 +1226,26 @@ func _recover(r interface{}, on_start bool) {
 // closes locacl log file only. If not standalone, call extended CloseServerLog() method:
 // it closes local log file and stops remote client cycle by setting flag _isAppLive to false
 func Close() {
+
+	var err error
+	defer func() {
+		if err != nil {
+			os.WriteFile(_logPath+"logcrash.txt", []byte(err.Error()), 0777)
+		}
+	}()
 	if _fileLog != nil {
-		_fileLog.Sync()
-		_fileLog.Close()
-		archihveFile()
+		err = _fileLog.Sync()
+		if err != nil {
+			return
+		}
+		err = _fileLog.Close()
+		if err != nil {
+			return
+		}
+		err = archihveFile()
+		if err != nil {
+			return
+		}
 		_fileLog = nil
 	}
 }
@@ -1517,11 +1571,25 @@ NEXT:
 	}
 
 	currTime := time.Now()
-	if currTime.Day() != _lastDay /*|| TestDateFlag*/ {
-		// if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastMonth) /*|| TestDateFlag*/ {
-		// if currTime.Minute() != _lastMinute /*|| TestDateFlag*/ {
-		createLogFileAgain()
+
+	if _period == 111 {
+		if currTime.Day() != _lastDay {
+			createLogFileAgain()
+		}
+	} else if _period == 11 {
+		if currTime.Hour() != _lastHour {
+			createLogFileAgain()
+		}
+	} else { // _period == 1
+		if currTime.Minute() != _lastMinute {
+			createLogFileAgain()
+		}
 	}
+	// if currTime.Day() != _lastDay /*|| TestDateFlag*/ {
+	// 	// if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastMonth) /*|| TestDateFlag*/ {
+	// 	// if currTime.Minute() != _lastMinute /*|| TestDateFlag*/ {
+	// 	createLogFileAgain()
+	// }
 
 	// file may be closed by other thread (service became available, file was nilled)
 	if _fileLog != nil {
@@ -1624,7 +1692,7 @@ func createLogFileAgain() error {
 		strErr string
 		err    error
 	)
-	_fileLog, _, err = createLogFile(&_logPath)
+	_fileLog, _, err = createLogFile(_logPath)
 	if err != nil {
 		strErr = fmt.Sprintf("can not cfeate log file: %s\n%s", _logPath, err.Error())
 		AddError(strErr)
@@ -1641,14 +1709,14 @@ func createLogFileAgain() error {
 // - file reference,
 // - flag, if the file has already been,
 // - error
-func createLogFile(logpath *string) (*os.File, bool, error) {
+func createLogFile(logpath string) (*os.File, bool, error) {
 
 	var (
 		err              error
 		fileLog          *os.File
 		fileExistsBefore bool
 	)
-	if logpath == nil {
+	if len(logpath) == 0 {
 		return nil, false, nil
 	}
 
@@ -1656,7 +1724,7 @@ func createLogFile(logpath *string) (*os.File, bool, error) {
 
 	sb := &bytes.Buffer{}
 	sb.Grow(1000)
-	joinStringBuffP(sb, *logpath)
+	joinStringBuffP(sb, logpath)
 	for _, ch := range _fileNameFormat {
 		switch ch {
 		case "A":
@@ -1687,7 +1755,7 @@ func createLogFile(logpath *string) (*os.File, bool, error) {
 		return nil, fileExistsBefore, errors.New(e)
 	}
 	_lastDay = currTime.Day()
-	_lastMonth = int(currTime.Month())
+	_lastHour = int(currTime.Hour())
 	_lastMinute = currTime.Minute()
 
 	if !fileExistsBefore {
@@ -1867,24 +1935,26 @@ func joinString(elem ...string) string {
 	return res
 }
 
-func archihveFile() {
+func archihveFile() error {
 
 	fi, err := os.Stat(_fileLog.Name())
 	if err != nil {
-		return
+		return err
 	}
 	diff := int(fi.Size()) - len(_log_format)
 	if -10 < diff && diff < 10 {
 		os.Remove(_fileLog.Name())
-		return
+		return err
 	}
 
 	fdir, fname := filepath.Split(_fileLog.Name())
 	err = os.Rename(_fileLog.Name(), fdir+"_"+fname)
 	if err != nil {
-		AddError(err.Error())
-		WriteTask()
+		return err
+		// AddError(err.Error())
+		// WriteTask()
 	}
+	return nil
 }
 
 func LogTxtTest(msg *string) {
@@ -1944,7 +2014,7 @@ NEXT:
 	}
 
 	currTime := time.Now()
-	if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastMonth) /*|| TestDateFlag*/ {
+	if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastHour) /*|| TestDateFlag*/ {
 		createLogFileAgain()
 	}
 
