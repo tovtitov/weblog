@@ -893,7 +893,7 @@ func SetLogLevel(level string) bool {
 func SetLogPath(logdir string) bool {
 
 	if len(logdir) == 0 {
-		return true
+		return false
 	}
 
 	logdir = strings.TrimSpace(logdir)
@@ -903,7 +903,7 @@ func SetLogPath(logdir string) bool {
 	}
 
 	if len(logdir) == 0 {
-		return true
+		return false
 	}
 	if !strings.HasSuffix(logdir, _path_separator) {
 		logdir = logdir + _path_separator
@@ -911,13 +911,16 @@ func SetLogPath(logdir string) bool {
 
 	err := os.MkdirAll(logdir, os.ModePerm)
 	if err != nil {
+		fmt.Println("can not cfeate new log directory:" + logdir + "\nERROR: " + err.Error())
 		AddError(fmt.Sprintf("can not cfeate new log directory: %s\n%s", logdir, err.Error()))
 		WriteTask()
 		return false
 	}
+	_logPath = logdir
 
 	fileLog, _, err := createLogFile(logdir)
 	if err != nil {
+		fmt.Println("can not cfeate log file in new directory: " + logdir + "\nERROR:" + err.Error())
 		AddError(fmt.Sprintf("can not cfeate log file in new directory: %s\n%s", logdir, err.Error()))
 		WriteTask()
 		return false //printError(strErr)
@@ -1058,6 +1061,7 @@ func Initialize(srvabbr string, isStandalone bool) {
 		printError("log folder not defined")
 		os.Exit(1)
 	}
+	fmt.Println("default log path: [" + _logPath + "]")
 
 	_uuidInstanceID = uuid.New()
 
@@ -1066,6 +1070,8 @@ func Initialize(srvabbr string, isStandalone bool) {
 	}
 
 	// validate log file accessability
+
+	// creates log file within docker !!!
 	var fileExisted = false
 	_fileLog, fileExisted, err = createLogFile(_logPath)
 	if err != nil {
