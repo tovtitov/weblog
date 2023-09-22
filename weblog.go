@@ -1071,7 +1071,9 @@ func Initialize(srvabbr string, isStandalone bool) {
 
 	// validate log file accessability
 
-	// creates log file within docker !!!
+	// ************************************************
+	// !!!!creates log file within docker if it runs there!!!
+	// ************************************************
 	var fileExisted = false
 	_fileLog, fileExisted, err = createLogFile(_logPath)
 	if err != nil {
@@ -1711,7 +1713,6 @@ func createLogFileAgain() error {
 		strErr string
 		err    error
 	)
-	fmt.Println("try create new log file: " + _logPath)
 	_fileLog, _, err = createLogFile(_logPath)
 	if err != nil {
 		strErr = fmt.Sprintf("can not cfeate log file: %s\n%s", _logPath, err.Error())
@@ -1771,10 +1772,8 @@ func createLogFile(logpath string) (*os.File, bool, error) {
 
 	if _, err := os.Stat(logFilePath); errors.Is(err, os.ErrNotExist) {
 		fileExistsBefore = false
-		fmt.Println("NOT fileExistsBefore: " + logFilePath)
 	} else {
 		fileExistsBefore = true
-		fmt.Println("fileExistsBefore: " + logFilePath)
 	}
 	// fileLog, err = os.OpenFile(logFilePath, os.O_APPEND|os.O_RDWR|os.O_CREATE, os.ModeExclusive)
 	fileLog, err = os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
@@ -1790,7 +1789,7 @@ func createLogFile(logpath string) (*os.File, bool, error) {
 	if !fileExistsBefore {
 		_, err = fileLog.WriteString(_log_format) // log file write check
 		if err != nil {
-			fmt.Println("!fileExistsBefore: " + err.Error())
+			fmt.Println("log file write check error: " + err.Error())
 		}
 	}
 
