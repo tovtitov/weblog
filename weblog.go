@@ -74,7 +74,7 @@ rs
 	_loglevel                        int = LOG_TRACE
 	_muLogWrite                          = &sync.Mutex{}
 	_fileLog                         *os.File
-	_lastDay, _lastHour, _lastMinute int = 0, 0, 0
+	_lastDay, _lastHour, _lastMinute int = 0, 0, 0 //  for test only: _lastDay, _lastHour, _lastMinute int = 0, 0, 0
 	_logPath                         string
 	_uuidDefault                     uuid.UUID //[16]byte
 	_uuidInstanceID                  uuid.UUID //[16]byte
@@ -1589,25 +1589,25 @@ NEXT:
 
 	currTime := time.Now()
 
-	if _period == 111 {
-		if currTime.Day() != _lastDay {
-			createLogFileAgain()
-		}
-	} else if _period == 11 {
-		if currTime.Hour() != _lastHour {
-			createLogFileAgain()
-		}
-	} else { // _period == 1
-		if currTime.Minute() != _lastMinute {
-			createLogFileAgain()
-		}
-	}
-
-	// if currTime.Day() != _lastDay /*|| TestDateFlag*/ {
-	// 	// if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastMonth) /*|| TestDateFlag*/ {
-	// 	// if currTime.Minute() != _lastMinute /*|| TestDateFlag*/ {
-	// 	createLogFileAgain()
+	// if _period == 111 {
+	// 	if currTime.Day() != _lastDay {
+	// 		createLogFileAgain()
+	// 	}
+	// } else if _period == 11 {
+	// 	if currTime.Hour() != _lastHour {
+	// 		createLogFileAgain()
+	// 	}
+	// } else { // _period == 1
+	// 	if currTime.Minute() != _lastMinute {
+	// 		createLogFileAgain()
+	// 	}
 	// }
+
+	if currTime.Day() != _lastDay /*|| TestDateFlag*/ {
+		// if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastMonth) /*|| TestDateFlag*/ {
+		// if currTime.Minute() != _lastMinute /*|| TestDateFlag*/ {
+		createLogFileAgain()
+	}
 
 	// file may be closed by other thread (service became available, file was nilled)
 	if _fileLog != nil {
@@ -1783,8 +1783,8 @@ func createLogFile(logpath string) (*os.File, bool, error) {
 		return nil, fileExistsBefore, errors.New(e)
 	}
 	_lastDay = currTime.Day()
-	_lastHour = int(currTime.Hour())
-	_lastMinute = currTime.Minute()
+	// _lastHour = int(currTime.Hour())
+	// _lastMinute = currTime.Minute()
 
 	if !fileExistsBefore {
 		_, err = fileLog.WriteString(_log_format) // log file write check
