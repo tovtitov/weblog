@@ -826,6 +826,7 @@ func (w *Logger) Recover(r interface{}) {
 	default:
 		w.AddStacktrace("unknown request fatal error")
 	}
+	fmt.Println("on Recover: " + r.(string))
 }
 
 func LogPath() string { return _logPath }
@@ -1229,8 +1230,14 @@ func Close() {
 
 	var err error
 	defer func() {
+		if r := recover(); r != nil {
+			fmt.Print("PANIC: on Close: ")
+			fmt.Println(r)
+		}
 		if err != nil {
-			os.WriteFile(_logPath+"logcrash.txt", []byte(err.Error()), 0777)
+			fmt.Println("ERROR: on Close: " + err.Error())
+			// printError(err.Error())
+			// os.WriteFile(_logPath+"logcrash.txt", []byte(err.Error()), 0777)
 		}
 	}()
 	if _fileLog != nil {
@@ -1523,7 +1530,7 @@ func logTxt(msg *string) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Print("PANIC: logTxt: ")
+			fmt.Print("PANIC: on logTxt: ")
 			fmt.Println(r)
 		}
 	}()
@@ -1557,8 +1564,10 @@ NEXT:
 	}
 
 	if _fileLog == nil {
+
 		err := createLogFileAgain()
 		if err != nil {
+
 			// no service, no file/ Try 10 times before exit.
 			time.Sleep(100 * time.Millisecond)
 			if idx > 10 {
@@ -1585,6 +1594,7 @@ NEXT:
 			createLogFileAgain()
 		}
 	}
+
 	// if currTime.Day() != _lastDay /*|| TestDateFlag*/ {
 	// 	// if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastMonth) /*|| TestDateFlag*/ {
 	// 	// if currTime.Minute() != _lastMinute /*|| TestDateFlag*/ {
@@ -1594,10 +1604,8 @@ NEXT:
 	// file may be closed by other thread (service became available, file was nilled)
 	if _fileLog != nil {
 		_muLogWrite.Lock()
-		if _fileLog != nil {
-			_fileLog.WriteString(*msg)
-			fmt.Println(*msg)
-		}
+		_fileLog.WriteString(*msg)
+		fmt.Println(*msg)
 		_muLogWrite.Unlock()
 		if _fileLog == nil {
 			time.Sleep(100 * time.Millisecond)
@@ -1684,6 +1692,11 @@ func printStackTrace(sb *bytes.Buffer) {
 //	}
 func createLogFileAgain() error {
 
+	if r := recover(); r != nil {
+		fmt.Print("PANIC: on createLogFileAgain: ")
+		fmt.Println(r)
+	}
+
 	_muLogWrite.Lock()
 	Close()
 	_muLogWrite.Unlock()
@@ -1692,9 +1705,11 @@ func createLogFileAgain() error {
 		strErr string
 		err    error
 	)
+	fmt.Println("try create new log file: " + _logPath)
 	_fileLog, _, err = createLogFile(_logPath)
 	if err != nil {
 		strErr = fmt.Sprintf("can not cfeate log file: %s\n%s", _logPath, err.Error())
+		printError(strErr)
 		AddError(strErr)
 		WriteTask()
 		return printError(strErr)
@@ -1710,6 +1725,11 @@ func createLogFileAgain() error {
 // - flag, if the file has already been,
 // - error
 func createLogFile(logpath string) (*os.File, bool, error) {
+
+	if r := recover(); r != nil {
+		fmt.Print("PANIC: on createLogFile: ")
+		fmt.Println(r)
+	}
 
 	var (
 		err              error
@@ -1740,12 +1760,15 @@ func createLogFile(logpath string) (*os.File, bool, error) {
 
 	joinStringBuffP(sb, "log")
 	logFilePath := sb.String()
+	fmt.Println("logFilePath: " + logFilePath)
 	sb.Reset()
 
 	if _, err := os.Stat(logFilePath); errors.Is(err, os.ErrNotExist) {
 		fileExistsBefore = false
+		fmt.Println("NOT fileExistsBefore: " + logFilePath)
 	} else {
 		fileExistsBefore = true
+		fmt.Println("fileExistsBefore: " + logFilePath)
 	}
 	// fileLog, err = os.OpenFile(logFilePath, os.O_APPEND|os.O_RDWR|os.O_CREATE, os.ModeExclusive)
 	fileLog, err = os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
@@ -1761,7 +1784,7 @@ func createLogFile(logpath string) (*os.File, bool, error) {
 	if !fileExistsBefore {
 		_, err = fileLog.WriteString(_log_format) // log file write check
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println("!fileExistsBefore: " + err.Error())
 		}
 	}
 
