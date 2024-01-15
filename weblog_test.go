@@ -33,7 +33,7 @@ func TestWriteRequest(t *testing.T) {
 	// "/Users/titov/Code/NewSecretProject/weblog/"
 	InitF(
 		"$$$\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\r\nrq\r\nrs")
-
+	SetLogLevel("info")
 	log := NewLogger()
 
 	start := time.Now()

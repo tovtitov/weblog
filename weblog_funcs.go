@@ -534,6 +534,11 @@ func (w *Logger) WriteRequest() {
 			intResponseLen = len(str)
 			strResponse = str
 		}
+	} else {
+		intResponseLen = w.responseBuffer.Len()
+		intRequestLen = w.requestBuffer.Len()
+		strResponse = strconv.Itoa(intResponseLen)
+		strReq = strconv.Itoa(intRequestLen)
 	}
 
 	strIP := w.ip
