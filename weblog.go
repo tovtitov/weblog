@@ -65,7 +65,7 @@ var (
 rq
 rs
 `
-	fieldsDefs = []string{"datetime", "err", "cmd", "code", "latency", "ip", "srvc", "rqct", "rsct", "reqid", "uid", "rqqs", "rq", "rs"}
+	_fieldsDefs = []string{"datetime", "err", "cmd", "code", "latency", "ip", "srvc", "rqct", "rsct", "reqid", "uid", "rqqs", "rq", "rs"}
 
 	_recordDelimmiter string = "^^^"
 
@@ -155,6 +155,49 @@ type Logger struct {
 
 // START | STOP
 
+// initializes just single appliaction log
+func Init() {
+
+	_initialize("", true, "")
+
+}
+
+// - logHeaderFormat - example: "^^^\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\r\nrq\r\nrs"
+// where:
+// "^^^" - one log record seperator (cause multiline request/response values).
+// "err" - error message.
+// "cmd" - application command.
+// "code" - HTTP response code.
+// "latency" - request execution time.
+// "ip" - client ip.
+// "srvc" - 5 char service abbreviation.
+// "rqct" - request content type.
+// "rsct" - response content type.
+// "reqid" - request id (UUID).
+// "uid" - user id (UUID).
+// "rqqs" - request query string.
+// "rq" - request body.
+// "rs" - response body.
+// column separator does matter. "\n" means that column is placed on the new line.
+func InitF(logHeaderFormat string) {
+
+	_initialize("", true, logHeaderFormat)
+
+}
+
+// initializes log feature when many services writes to the one server database log
+//
+// Parameters:
+//
+// - srvabbr: service abbreviation (5 letters in caps, f.e.: LOGER). Mandatory if isStandalone = false
+//
+// - isStandalone true - writes to file, writes to logserver (to files if server is inaccesable)
+func InitMS(srvabbr string, isStandalone bool) {
+
+	_initialize(srvabbr, isStandalone, "")
+
+}
+
 // initializes log feature
 //
 // Parameters:
@@ -162,7 +205,31 @@ type Logger struct {
 // - srvabbr: service abbreviation (5 letters in caps, f.e.: LOGER). Mandatory if isStandalone = false
 //
 // - isStandalone true - writes to file, writes to logserver (to files if server is inaccesable)
-func Initialize(srvabbr string, isStandalone bool) {
+//
+// - logHeaderFormat - example: "^^^\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\r\nrq\r\nrs"
+// where:
+// "^^^" - one log record seperator (cause multiline request/response values).
+// "err" - error message.
+// "cmd" - application command.
+// "code" - HTTP response code.
+// "latency" - request execution time.
+// "ip" - client ip.
+// "srvc" - 5 char service abbreviation.
+// "rqct" - request content type.
+// "rsct" - response content type.
+// "reqid" - request id (UUID).
+// "uid" - user id (UUID).
+// "rqqs" - request query string.
+// "rq" - request body.
+// "rs" - response body.
+// column separator does matter. "\n" means that column is placed on the new line.
+func InitMSF(srvabbr string, isStandalone bool, logHeaderFormat string) {
+
+	_initialize(srvabbr, isStandalone, logHeaderFormat)
+
+}
+
+func _initialize(srvabbr string, isStandalone bool, logHeaderFormat string) {
 
 	defer func() {
 		r := recover()
@@ -223,18 +290,15 @@ func Initialize(srvabbr string, isStandalone bool) {
 		_fileLog = nil
 	}
 
-	info, err := SetLogFileFormat(_log_format)
+	if len(logHeaderFormat) > 0 {
+		err = setLogFileFormat(logHeaderFormat)
+	} else {
+		err = setLogFileFormat(_log_format)
+	}
 	if err != nil {
 		fmt.Printf("can not parse log file: %s\n", err.Error())
 		os.Exit(1)
 	}
-
-	_rowtags = info.Columns
-	_tagDelimiters = info.ColumnDelimiters
-	_recordDelimmiter = info.RecordDelimmiter
-	_mapHeaders = make(map[string]*logFormatInfo)
-	_mapHeaders[_log_format] = info
-
 	_isInitialized = true
 
 }
@@ -450,15 +514,31 @@ func GetLogFilePath() string {
 	return _fileLog.Name()
 }
 
-func SetLogFileFormat(val string) (*logFormatInfo, error) {
+// example: "^^^\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\r\nrq\r\nrs"
+// "^^^" - one log record seperator (cause multiline request/response values).
+// "err" - error message.
+// "cmd" - application command.
+// "code" - HTTP response code.
+// "latency" - request execution time.
+// "ip" - client ip.
+// "srvc" - 5 char service abbreviation.
+// "rqct" - request content type.
+// "rsct" - response content type.
+// "reqid" - request id (UUID).
+// "uid" - user id (UUID).
+// "rqqs" - request query string.
+// "rq" - request body.
+// "rs" - response body.
+// column separator does matter. "\n" means that column is placed on the new line.
+func setLogFileFormat(val string) error {
 
 	if len(val) == 0 {
-		return nil, errors.New("empty param")
+		return errors.New("empty param")
 	}
 
-	_log_format = NormalizeNewlines(_log_format)
+	_log_format = NormalizeNewlines(val)
 	if len(_log_format) == 0 {
-		return nil, errors.New("empty param after normalizing")
+		return errors.New("empty param after normalizing")
 	}
 
 	// When log a single record on server,
@@ -471,10 +551,19 @@ func SetLogFileFormat(val string) (*logFormatInfo, error) {
 	// header := _log_format[:len(_log_format)-2]
 	info, err := parseLogFileHeader(_log_format)
 	if err != nil {
-		return nil, fmt.Errorf("can not parse log file format: %s", err.Error())
+		return fmt.Errorf("can not parse log file format: %s", err.Error())
 	}
 
-	return info, nil
+	_rowtags = info.Columns
+	_tagDelimiters = info.ColumnDelimiters
+	_recordDelimmiter = info.RecordDelimmiter
+	if _mapHeaders == nil {
+		_mapHeaders = make(map[string]*logFormatInfo)
+	}
+
+	_mapHeaders[_log_format] = info
+
+	return nil
 }
 
 // on application start / stop

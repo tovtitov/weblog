@@ -17,7 +17,7 @@ import (
 func TestWriteCycle(t *testing.T) {
 
 	// "/Users/titov/Code/NewSecretProject/weblog/"
-	Initialize("LOGER", true)
+	Init()
 	SetFileNameFormat("D")
 	for i := 0; i < 10; i++ {
 
@@ -31,7 +31,9 @@ func TestWriteCycle(t *testing.T) {
 func TestWriteRequest(t *testing.T) {
 
 	// "/Users/titov/Code/NewSecretProject/weblog/"
-	Initialize("LOGER", true)
+	InitF(
+		"$$$\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\r\nrq\r\nrs")
+
 	log := NewLogger()
 
 	start := time.Now()
@@ -51,7 +53,7 @@ func TestWriteRequest(t *testing.T) {
 	multiline 
 	response`))
 	log.SetRequestQS("qqq=wwww&eee=rrr")
-	log.SetIsRequestBinary(true)
+	// log.SetIsRequestBinary(true)
 	log.SetResponseCode(200)
 	log.SetRequestContentType("text/plain")
 	log.SetResponseContentType("application/json")
@@ -64,7 +66,7 @@ func TestWriteRequest(t *testing.T) {
 
 func TestSendMessage(t *testing.T) {
 
-	Initialize("LOGER", true)
+	Init()
 
 	arr := []byte(_log_format)
 	_, code, err := sendMessage(SERVER_URL_LOG_RECORD, &arr)
@@ -99,7 +101,7 @@ rs:some
 	multiline 
 	response`
 	//"/Users/titov/Code/NewSecretProject/weblog/",
-	Initialize("SRVC1", true)
+	Init()
 	oLog, err := ParseLogRecordString(&val, false)
 	if err != nil {
 		require.NoError(t, err, err.Error())

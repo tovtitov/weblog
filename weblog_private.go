@@ -34,7 +34,7 @@ func (info *logFormatInfo) validate() error {
 	// ^^^ datetime err cmd code latency ip srvc rqct rsct reqid uid rqqs\r\nrq\r\nrs
 	errFields := ""
 	for _, r := range info.Columns {
-		if !slices.Contains(fieldsDefs, r) {
+		if !slices.Contains(_fieldsDefs, r) {
 			errFields = errFields + r + ","
 		}
 	}
