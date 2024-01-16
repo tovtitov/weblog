@@ -119,21 +119,22 @@ rs
 
 // for request/response only. Use weblog funcs for start/stop logging
 type Logger struct {
-	time       *time.Time
-	timeStr    string
-	reqid      uuid.UUID
-	uid        uuid.UUID
-	user       interface{}
-	code       int
-	codeStr    string
-	cmd        string
-	latency    int64
-	latencyStr string
-	ip         string
-	rqct       string
-	rsct       string
-	rqqs       string
-	useragent  string
+	time          *time.Time
+	timeStr       string
+	reqid         uuid.UUID
+	uid           uuid.UUID
+	user          interface{}
+	code          int
+	codeStr       string
+	cmd           string
+	latency       int64
+	latencyStr    string
+	ip            string
+	rqct          string
+	rsct          string
+	rqqs          string
+	useragent     string
+	useragent_cmd string
 	// rq                 string
 	is_response_binary bool // for images
 	is_request_binary  bool // for images

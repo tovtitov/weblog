@@ -119,6 +119,11 @@ func (w *Logger) SetUserAgent(val string) {
 	w.useragent = val
 }
 
+// To reduce log size UserAgent is logged only when this command occures
+func (w *Logger) SetUserAgentCommand(val string) {
+	w.useragent_cmd = val
+}
+
 func (w *Logger) SetCommand(val string) {
 
 	intTmp := len(val)
@@ -595,7 +600,13 @@ func (w *Logger) WriteRequest() {
 		case "rqqs":
 			sb.WriteString(w.rqqs)
 		case "useragent":
-			sb.WriteString(w.useragent)
+			if len(w.useragent_cmd) > 0 {
+				if w.cmd == w.useragent_cmd {
+					sb.WriteString(w.useragent)
+				}
+			} else {
+				sb.WriteString(w.useragent)
+			}
 		case "rq":
 			sb.WriteString("rq:")
 			sb.WriteString(strReq)
