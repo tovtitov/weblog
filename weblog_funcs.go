@@ -129,9 +129,9 @@ func (w *Logger) SetCommand(val string) {
 
 		if _rxCmd.MatchString(val) {
 			w.cmd = val
-		} else {
-			w.stacktraceBuffer.WriteString(joinString(
-				"can not parse command", NEW_LINE))
+			// } else {
+			// 	w.stacktraceBuffer.WriteString(joinString(
+			// 		"can not parse command", NEW_LINE))
 		}
 	} else {
 		w.stacktraceBuffer.WriteString(joinString(
