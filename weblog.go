@@ -61,11 +61,11 @@ const (
 var (
 	_log_mark       string // to reduce stacktrace path
 	_path_separator string = string(os.PathSeparator)
-	_log_format            = `^^^	datetime	err	cmd	code	latency	ip	srvc	rqct	rsct	reqid	uid	rqqs
+	_log_format            = `^^^	datetime	err	cmd	code	latency	ip	srvc	rqct	rsct	reqid	uid	rqqs	useragent
 rq
 rs
 `
-	_fieldsDefs = []string{"datetime", "err", "cmd", "code", "latency", "ip", "srvc", "rqct", "rsct", "reqid", "uid", "rqqs", "rq", "rs"}
+	_fieldsDefs = []string{"datetime", "err", "cmd", "code", "latency", "ip", "srvc", "rqct", "rsct", "reqid", "uid", "rqqs", "useragent", "rq", "rs"}
 
 	_recordDelimmiter string = "^^^"
 
@@ -91,6 +91,7 @@ rs
 	// _rxIP         = regexp.MustCompile(`^https?:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$`)
 	_rxIPv4v6        = regexp.MustCompile(`((^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s*$)|(^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$))`)
 	_rxIPv4v6_simple = regexp.MustCompile(`^[0-9.:A-Fa-f, \[\]]{1,150}$`)
+	_rxUserAgent     = regexp.MustCompile(`[^\t \.,_;\(\)\/a-zA-Z\d]`)
 
 	// https://www.regextester.com/104038
 	// rxIp     = regexp.MustCompile(`((^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s*$)|(^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$))`)
@@ -132,6 +133,7 @@ type Logger struct {
 	rqct       string
 	rsct       string
 	rqqs       string
+	useragent  string
 	// rq                 string
 	is_response_binary bool // for images
 	is_request_binary  bool // for images
@@ -176,6 +178,7 @@ func Init() {
 // "reqid" - request id (UUID).
 // "uid" - user id (UUID).
 // "rqqs" - request query string.
+// "useragent" - obviously
 // "rq" - request body.
 // "rs" - response body.
 // column separator does matter. "\n" means that column is placed on the new line.
@@ -220,6 +223,7 @@ func InitMS(srvabbr string, isStandalone bool) {
 // "reqid" - request id (UUID).
 // "uid" - user id (UUID).
 // "rqqs" - request query string.
+// "useragent" - obviously
 // "rq" - request body.
 // "rs" - response body.
 // column separator does matter. "\n" means that column is placed on the new line.
@@ -527,6 +531,7 @@ func GetLogFilePath() string {
 // "reqid" - request id (UUID).
 // "uid" - user id (UUID).
 // "rqqs" - request query string.
+// "useragent" - obviously
 // "rq" - request body.
 // "rs" - response body.
 // column separator does matter. "\n" means that column is placed on the new line.

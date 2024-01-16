@@ -110,6 +110,15 @@ func (w *Logger) ServiceName() string {
 	return w.serviceName
 }
 
+// useragent  string
+func (w *Logger) SetUserAgent(val string) {
+	if len(val) > 255 {
+		val = val[:255]
+	}
+	val = _rxUserAgent.ReplaceAllString(val, "")
+	w.useragent = val
+}
+
 func (w *Logger) SetCommand(val string) {
 
 	intTmp := len(val)
@@ -487,7 +496,7 @@ func (w *Logger) WriteRequest() {
 		intResponseLen int
 		intRequestLen  int
 	)
-	if w.loglevel != LOG_INFO {
+	if w.loglevel != LOG_INFO && len(w.cmd) > 0 {
 		strResponse = w.responseBuffer.String()
 		strReq = w.requestBuffer.String()
 		intResponseLen = len(strResponse)
@@ -585,6 +594,8 @@ func (w *Logger) WriteRequest() {
 			}
 		case "rqqs":
 			sb.WriteString(w.rqqs)
+		case "useragent":
+			sb.WriteString(w.useragent)
 		case "rq":
 			sb.WriteString("rq:")
 			sb.WriteString(strReq)

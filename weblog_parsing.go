@@ -48,6 +48,8 @@ func ParseLogRecordData(cols []string, vals []string) *Logger {
 			rec.SetUserIdStr(vals[i])
 		case "rqqs":
 			rec.SetRequestQS(vals[i])
+		case "useragent":
+			rec.SetUserAgent(vals[i])
 		case "rq":
 			rec.SetRequest([]byte(vals[i]))
 		case "rs":

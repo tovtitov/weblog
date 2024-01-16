@@ -31,8 +31,9 @@ func TestWriteCycle(t *testing.T) {
 func TestWriteRequest(t *testing.T) {
 
 	// "/Users/titov/Code/NewSecretProject/weblog/"
-	InitF(
-		"$$$\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\r\nrq\r\nrs")
+	// InitF(
+	// 	"$$$\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\tuseragent\r\nrq\r\nrs")
+	Init()
 	SetLogLevel("info")
 	log := NewLogger()
 
@@ -45,6 +46,7 @@ func TestWriteRequest(t *testing.T) {
 
 	log.SetCommand("object.action")
 	log.SetIP("203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178")
+	log.SetUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	fmt.Println(log.ip)
 	log.SetRequest([]byte(`some 
 	multiline 
