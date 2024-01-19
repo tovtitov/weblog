@@ -35,6 +35,7 @@ func TestWriteRequest(t *testing.T) {
 	// 	"$$$\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\tuseragent\r\nrq\r\nrs")
 	Init()
 	SetLogLevel("info")
+	SetLogFileCountLimit(10)
 	log := NewLogger()
 
 	start := time.Now()

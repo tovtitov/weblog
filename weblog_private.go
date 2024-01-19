@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -255,31 +257,14 @@ func printStackTrace(sb *bytes.Buffer) {
 	sb.WriteString("\n")
 }
 
-// func createLogFileAgain() error {
-
-//		var strErr string
-//		fileLog, _, err := createLogFile(&_logPath)
-//		if err != nil {
-//			strErr = fmt.Sprintf("can not cfeate log file: %s\n%s", _logPath, err.Error())
-//			AddError(strErr)
-//			WriteTask()
-//			return printError(strErr)
-//		}
-//		_muLogWrite.Lock()
-//		if _fileLog != nil {
-//			_ = _fileLog.Close()
-//			archihveFile()
-//			_fileLog = fileLog
-//		}
-//		_muLogWrite.Unlock()
-//		return nil
-//	}
 func createLogFileAgain() error {
 
-	if r := recover(); r != nil {
-		fmt.Print("PANIC: on createLogFileAgain: ")
-		fmt.Println(r)
-	}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Print("PANIC: on createLogFileAgain: ")
+			fmt.Println(r)
+		}
+	}()
 
 	_muLogWrite.Lock()
 	Close()
@@ -301,6 +286,59 @@ func createLogFileAgain() error {
 	return nil
 }
 
+func find(root, ext string) []string {
+	var a []string
+	filepath.WalkDir(root, func(s string, d fs.DirEntry, e error) error {
+		if e != nil {
+			return e
+		}
+		if filepath.Ext(d.Name()) == ext {
+			a = append(a, s)
+		}
+		return nil
+	})
+	return a
+}
+
+type file_item struct {
+	Path     string
+	Modified time.Time
+}
+
+func removeOldLogFiles(logpath string) {
+
+	var fitems []*file_item
+	//collect
+	for _, src := range find(logpath, ".log") {
+
+		stat, err := os.Stat(src)
+		if err != nil {
+			continue
+		}
+
+		fitem := &file_item{}
+		fitem.Path = src
+		fitem.Modified = stat.ModTime()
+
+		fitems = append(fitems, fitem)
+	}
+
+	// _logFileCountLimit == -1 - DO NOTHING
+	if _logFileCountLimit > 0 && len(fitems) > 0 {
+
+		if len(fitems) > _logFileCountLimit {
+
+			sort.Slice(fitems, func(i, j int) bool {
+				return fitems[i].Modified.After(fitems[j].Modified)
+			})
+			for i := _logFileCountLimit; i < len(fitems); i++ {
+				os.Remove(fitems[i].Path)
+			}
+		}
+
+	}
+}
+
 // creates new log file
 // params: log directory
 // returns:
@@ -309,10 +347,14 @@ func createLogFileAgain() error {
 // - error
 func createLogFile(logpath string) (*os.File, bool, error) {
 
-	if r := recover(); r != nil {
-		fmt.Print("PANIC: on createLogFile: ")
-		fmt.Println(r)
-	}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Print("PANIC: on createLogFile: ")
+			fmt.Println(r)
+		}
+	}()
+
+	removeOldLogFiles(logpath)
 
 	var (
 		err              error
