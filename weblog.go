@@ -70,8 +70,7 @@ rs
 	_recordDelimmiter string = "^^^"
 
 	_loglevel                        int = LOG_TRACE
-	_logFileCountLimitMin            int = 10
-	_logFileCountLimit               int = 100
+	_logFileCountLimit               int = -1
 	_muLogWrite                          = &sync.Mutex{}
 	_fileLog                         *os.File
 	_lastDay, _lastHour, _lastMinute int = 0, 0, 0 //  for test only: _lastDay, _lastHour, _lastMinute int = 0, 0, 0
@@ -334,10 +333,8 @@ func NewLogger() *Logger {
 
 func SetLogFileCountLimit(val int) {
 
-	if val == -1 {
-		_logFileCountLimit = val
-	} else if val < _logFileCountLimitMin {
-		_logFileCountLimit = _logFileCountLimitMin
+	if val <= 0 {
+		_logFileCountLimit = -1
 	} else {
 		_logFileCountLimit = val
 	}

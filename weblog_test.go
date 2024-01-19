@@ -33,9 +33,9 @@ func TestWriteRequest(t *testing.T) {
 	// "/Users/titov/Code/NewSecretProject/weblog/"
 	// InitF(
 	// 	"$$$\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\tuseragent\r\nrq\r\nrs")
+	SetLogFileCountLimit(10)
 	Init()
 	SetLogLevel("info")
-	SetLogFileCountLimit(10)
 	log := NewLogger()
 
 	start := time.Now()

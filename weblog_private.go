@@ -324,16 +324,13 @@ func removeOldLogFiles(logpath string) {
 	}
 
 	// _logFileCountLimit == -1 - DO NOTHING
-	if _logFileCountLimit > 0 && len(fitems) > 0 {
+	if _logFileCountLimit > 0 && len(fitems) > 0 && len(fitems) > _logFileCountLimit {
 
-		if len(fitems) > _logFileCountLimit {
-
-			sort.Slice(fitems, func(i, j int) bool {
-				return fitems[i].Modified.After(fitems[j].Modified)
-			})
-			for i := _logFileCountLimit; i < len(fitems); i++ {
-				os.Remove(fitems[i].Path)
-			}
+		sort.Slice(fitems, func(i, j int) bool {
+			return fitems[i].Modified.After(fitems[j].Modified)
+		})
+		for i := _logFileCountLimit; i < len(fitems); i++ {
+			os.Remove(fitems[i].Path)
 		}
 
 	}
