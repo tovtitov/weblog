@@ -98,15 +98,15 @@ rs
 	// rxIp     = regexp.MustCompile(`((^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s*$)|(^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$))`)
 
 	//
-	_infoMessageBuf       *bytes.Buffer
-	_errorMessageBuf      *bytes.Buffer
-	_fileNameFormat       []string = []string{}
-	_period               int      = 111 //111 - day, 11 - hour, 1 - minute
-	_periodCount          int      = 1
-	_isWebLogSrvAvailable          = false
-	_isAppLive                     = true
-	_isInitialized                 = false
-	_isStandalone                  = true // log file run on WebLogSrv
+	_infoMessageBuf  *bytes.Buffer
+	_errorMessageBuf *bytes.Buffer
+	_fileNameFormat  []string = []string{}
+	// _period               int      = 111 //111 - day, 11 - hour, 1 - minute
+	// _periodCount          int      = 1
+	_isWebLogSrvAvailable = false
+	_isAppLive            = true
+	_isInitialized        = false
+	_isStandalone         = true // log file run on WebLogSrv
 
 	_mapHeaders  map[string]*logFormatInfo //parsed log file header formats
 	_serviceAbbr string
@@ -429,18 +429,18 @@ func SetLogPath(logdir string) bool {
 	}
 	_logPath = logdir
 
-	fileLog, _, err := createLogFile(logdir)
-	if err != nil {
-		fmt.Println("can not cfeate log file in new directory: " + logdir + "\nERROR:" + err.Error())
-		AddError(fmt.Sprintf("can not cfeate log file in new directory: %s\n%s", logdir, err.Error()))
-		WriteTask()
-		return false //printError(strErr)
-	}
+	// fileLog, _, err := createLogFile(logdir)
+	// if err != nil {
+	// 	fmt.Println("can not cfeate log file in new directory: " + logdir + "\nERROR:" + err.Error())
+	// 	AddError(fmt.Sprintf("can not cfeate log file in new directory: %s\n%s", logdir, err.Error()))
+	// 	WriteTask()
+	// 	return false //printError(strErr)
+	// }
 
-	_muLogWrite.Lock()
-	Close()
-	_fileLog = fileLog
-	_muLogWrite.Unlock()
+	// _muLogWrite.Lock()
+	// Close()
+	// _fileLog = fileLog
+	// _muLogWrite.Unlock()
 
 	return true
 }
@@ -478,9 +478,13 @@ func SetFileNameFormat(fileNameFormat string) bool {
 		_fileNameFormat = append(_fileNameFormat, string(r))
 	}
 
-	createLogFileAgain()
+	// createLogFileAgain()
 
 	return true
+}
+
+func Reconfigure() {
+	createLogFileAgain()
 }
 
 // A - abbreviation, D - date, T - time, U - instance ID (UUID)
@@ -488,38 +492,39 @@ func SetFileNameFormat(fileNameFormat string) bool {
 // by default: 2022-12-12.log
 // period - period recreate log file: minute, hour, day
 // periodCount - count of period (10 min)
-func SetFileNameFormatExt(fileNameFormat string, period string, periodCount int) bool {
-	fileNameFormat = strings.TrimSpace(fileNameFormat)
-	if len(fileNameFormat) == 0 {
-		return true
-	}
-	fnf := "D"
-	if _rxFileFormat.MatchString(fileNameFormat) {
-		fnf = fileNameFormat
-	} else {
-		AddError("fileNameFormat parameter is invalid: expected \"A\",\"D\" or \"T\" or their combination")
-		WriteTask()
-		return false
-	}
-	_fileNameFormat = nil
-	for _, r := range fnf {
-		_fileNameFormat = append(_fileNameFormat, string(r))
-	}
+// func SetFileNameFormatExt(fileNameFormat string, period string, periodCount int) bool {
+// 	fileNameFormat = strings.TrimSpace(fileNameFormat)
+// 	if len(fileNameFormat) == 0 {
+// 		return true
+// 	}
+// 	fnf := "D"
+// 	if _rxFileFormat.MatchString(fileNameFormat) {
+// 		fnf = fileNameFormat
+// 	} else {
+// 		AddError("fileNameFormat parameter is invalid: expected \"A\",\"D\" or \"T\" or their combination")
+// 		WriteTask()
+// 		return false
+// 	}
+// 	_fileNameFormat = nil
+// 	for _, r := range fnf {
+// 		_fileNameFormat = append(_fileNameFormat, string(r))
+// 	}
 
-	createLogFileAgain()
+// 	createLogFileAgain()
 
-	switch {
-	case period == "day":
-		_period = 111
-	case period == "hour":
-		_period = 11
-	case period == "minute":
-		_period = 1
-	}
+// 	switch {
+// 	case period == "day":
+// 		_period = 111
+// 	case period == "hour":
+// 		_period = 11
+// 	case period == "minute":
+// 		_period = 1
+// 	}
 
-	_periodCount = periodCount
-	return true
-}
+// 	_periodCount = periodCount
+// 	return true
+// }
+
 func IsServiceAbbreviation(srvabbr string) bool { return _rxSrvAbbr.MatchString(srvabbr) }
 
 func GetLogFilePath() string {

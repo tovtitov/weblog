@@ -36,6 +36,8 @@ func TestWriteRequest(t *testing.T) {
 	SetLogFileCountLimit(10)
 	Init()
 	SetLogLevel("info")
+	SetLogPath("/Users/titov/Code/Licence")
+	Reconfigure()
 	log := NewLogger()
 
 	start := time.Now()
