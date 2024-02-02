@@ -17,6 +17,11 @@ import (
 
 // PRIVATE
 
+var (
+	_lastDay   int
+	_lastMonth int
+)
+
 type logFormatInfo struct {
 	Columns          []string
 	ColumnDelimiters []string
@@ -398,6 +403,7 @@ func createLogFile(logpath string) (*os.File, bool, error) {
 		return nil, fileExistsBefore, errors.New(e)
 	}
 	_lastDay = currTime.Day()
+	_lastMonth = int(currTime.Month())
 	// _lastHour = int(currTime.Hour())
 	// _lastMinute = currTime.Minute()
 
@@ -679,7 +685,7 @@ NEXT:
 	}
 
 	currTime := time.Now()
-	if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastHour) /*|| TestDateFlag*/ {
+	if currTime.Day() != _lastDay || currTime.Month() != time.Month(_lastMonth) /*|| TestDateFlag*/ {
 		createLogFileAgain()
 	}
 

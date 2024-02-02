@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	TAB      = "\t"
-	NEW_LINE = "\n"
+	TAB                   = "\t"
+	NEW_LINE              = "\n"
+	PATH_SEPARATOR string = string(os.PathSeparator)
 
 	// this has to be ordered by logging data size
 	// https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
@@ -54,29 +55,27 @@ const (
 
 	// FieldMaxTextLen      = -1
 	FieldMaxContentType = 75 // rqsr, rsqt
-
-	FieldMaxIPLength = 250
+	FieldMaxIPLength    = 250
 )
 
 var (
-	_log_mark       string // to reduce stacktrace path
-	_path_separator string = string(os.PathSeparator)
-	_log_format            = `^^^	datetime	err	cmd	code	latency	ip	srvc	rqct	rsct	reqid	uid	rqqs	useragent
+	_log_mark          string // to reduce stacktrace path
+	_loglevel          int    = LOG_TRACE
+	_logFileCountLimit int    = -1
+	_logPath           string
+	_fileNameFormat    []string  = []string{"D", "T"} // default file format
+	_uuidInstanceID    uuid.UUID = uuid.New()         //[16]byte
+	_uuidDefault       uuid.UUID                      //[16]byte
+
+	_log_format = `^^^	datetime	err	cmd	code	latency	ip	srvc	rqct	rsct	reqid	uid	rqqs	useragent
 rq
 rs
 `
-	_fieldsDefs = []string{"datetime", "err", "cmd", "code", "latency", "ip", "srvc", "rqct", "rsct", "reqid", "uid", "rqqs", "useragent", "rq", "rs"}
-
+	_fieldsDefs              = []string{"datetime", "err", "cmd", "code", "latency", "ip", "srvc", "rqct", "rsct", "reqid", "uid", "rqqs", "useragent", "rq", "rs"}
 	_recordDelimmiter string = "^^^"
 
-	_loglevel                        int = LOG_TRACE
-	_logFileCountLimit               int = -1
-	_muLogWrite                          = &sync.Mutex{}
-	_fileLog                         *os.File
-	_lastDay, _lastHour, _lastMinute int = 0, 0, 0 //  for test only: _lastDay, _lastHour, _lastMinute int = 0, 0, 0
-	_logPath                         string
-	_uuidDefault                     uuid.UUID //[16]byte
-	_uuidInstanceID                  uuid.UUID //[16]byte
+	_muLogWrite = &sync.Mutex{}
+	_fileLog    *os.File
 
 	// parsed log file default header
 	_rowtags       []string
@@ -100,7 +99,6 @@ rs
 	//
 	_infoMessageBuf  *bytes.Buffer
 	_errorMessageBuf *bytes.Buffer
-	_fileNameFormat  []string = []string{}
 	// _period               int      = 111 //111 - day, 11 - hour, 1 - minute
 	// _periodCount          int      = 1
 	_isWebLogSrvAvailable = false
@@ -162,7 +160,16 @@ type Logger struct {
 // initializes just single appliaction log
 func Init() {
 
-	_initialize("", true, "")
+	_initialize("", "", true, "")
+
+}
+
+// initializes with weblog.config path (just path),
+// f.e. app may start within docker, its config (from host) says weblog.config location on host
+// and here you can set it from app.
+func InitC(configPath string) {
+
+	_initialize(configPath, "", true, "")
 
 }
 
@@ -184,9 +191,9 @@ func Init() {
 // "rq" - request body.
 // "rs" - response body.
 // column separator does matter. "\n" means that column is placed on the new line.
-func InitF(logHeaderFormat string) {
+func InitCF(configPath string, logHeaderFormat string) {
 
-	_initialize("", true, logHeaderFormat)
+	_initialize(configPath, "", true, logHeaderFormat)
 
 }
 
@@ -197,9 +204,9 @@ func InitF(logHeaderFormat string) {
 // - srvabbr: service abbreviation (5 letters in caps, f.e.: LOGER). Mandatory if isStandalone = false
 //
 // - isStandalone true - writes to file, writes to logserver (to files if server is inaccesable)
-func InitMS(srvabbr string, isStandalone bool) {
+func InitCMS(configPath string, srvabbr string, isStandalone bool) {
 
-	_initialize(srvabbr, isStandalone, "")
+	_initialize(configPath, srvabbr, isStandalone, "")
 
 }
 
@@ -229,13 +236,13 @@ func InitMS(srvabbr string, isStandalone bool) {
 // "rq" - request body.
 // "rs" - response body.
 // column separator does matter. "\n" means that column is placed on the new line.
-func InitMSF(srvabbr string, isStandalone bool, logHeaderFormat string) {
+func InitCMSF(configPath string, srvabbr string, isStandalone bool, logHeaderFormat string) {
 
-	_initialize(srvabbr, isStandalone, logHeaderFormat)
+	_initialize(configPath, srvabbr, isStandalone, logHeaderFormat)
 
 }
 
-func _initialize(srvabbr string, isStandalone bool, logHeaderFormat string) {
+func _initialize(configPath string, srvabbr string, isStandalone bool, logHeaderFormat string) {
 
 	defer func() {
 		r := recover()
@@ -244,6 +251,16 @@ func _initialize(srvabbr string, isStandalone bool, logHeaderFormat string) {
 			os.Exit(1)
 		}
 	}()
+
+	var (
+		err error
+	)
+
+	err = initialize_config(configPath)
+	if err != nil {
+		fmt.Printf("can not parse log config file: %s\n", err.Error())
+		os.Exit(1)
+	}
 
 	_isStandalone = isStandalone
 
@@ -255,14 +272,9 @@ func _initialize(srvabbr string, isStandalone bool, logHeaderFormat string) {
 			os.Exit(1)
 		}
 	}
-	_fileNameFormat = []string{"D", "T"} // default file format
 
 	_infoMessageBuf = &bytes.Buffer{}
 	_errorMessageBuf = &bytes.Buffer{}
-
-	var (
-		err error
-	)
 
 	_logPath, err = getDefaultLogPath()
 	if err != nil {
@@ -281,6 +293,7 @@ func _initialize(srvabbr string, isStandalone bool, logHeaderFormat string) {
 
 	// ************************************************
 	// !!!!creates log file within docker if it runs there!!!
+	// use SetLogPath() to change log path after initialization
 	// ************************************************
 	var fileExisted = false
 	_fileLog, fileExisted, err = createLogFile(_logPath)
@@ -331,29 +344,13 @@ func NewLogger() *Logger {
 	return w
 }
 
-func SetLogFileCountLimit(val int) {
-
-	if val <= 0 {
-		_logFileCountLimit = -1
-	} else {
-		_logFileCountLimit = val
-	}
-}
-
 func LogPath() string { return _logPath }
-
-// project name to cut stacktrace on errors
-func SetLogMarker(marker string) {
-	if len(strings.TrimSpace(marker)) > 0 {
-		_log_mark = marker
-	}
-}
 
 // weblogsrv url
 func LogServerURL() string {
 	return SERVER_URL
 }
-func SetLogServerURL(url string) bool {
+func setLogServerURL(url string) bool {
 	url = strings.TrimSpace(url)
 	if len(url) == 0 {
 		return false
@@ -372,79 +369,6 @@ func SetLogServerURL(url string) bool {
 	return true
 }
 
-// "info" - just query string (default) end response HTTP code
-// "trace" - as "debug" but request body and response body are cut up to 1KB
-// "debug" - full info: query string, request body, response body, (headers?), errors
-// "error" - full info only if error ocuures
-func SetLogLevel(level string) bool {
-
-	level = strings.TrimSpace(level)
-	if len(level) == 0 {
-		return false
-	}
-	switch strings.ToLower(level) {
-	case "info":
-		_loglevel = LOG_INFO
-		return true
-	case "trace":
-		_loglevel = LOG_TRACE
-		return true
-	case "debug":
-		_loglevel = LOG_DEBUG
-		return true
-	case "error":
-		_loglevel = LOG_ERROR
-		return true
-	}
-	return false
-}
-
-// change log directory, and create new log file in it (if it does not exist).
-// if not set, directory "logs" will be created next to the executable.
-func SetLogPath(logdir string) bool {
-
-	if len(logdir) == 0 {
-		return false
-	}
-
-	logdir = strings.TrimSpace(logdir)
-
-	if logdir == _logPath {
-		return true
-	}
-
-	if len(logdir) == 0 {
-		return false
-	}
-	if !strings.HasSuffix(logdir, _path_separator) {
-		logdir = logdir + _path_separator
-	}
-
-	err := os.MkdirAll(logdir, os.ModePerm)
-	if err != nil {
-		fmt.Println("can not cfeate new log directory:" + logdir + "\nERROR: " + err.Error())
-		AddError(fmt.Sprintf("can not cfeate new log directory: %s\n%s", logdir, err.Error()))
-		WriteTask()
-		return false
-	}
-	_logPath = logdir
-
-	// fileLog, _, err := createLogFile(logdir)
-	// if err != nil {
-	// 	fmt.Println("can not cfeate log file in new directory: " + logdir + "\nERROR:" + err.Error())
-	// 	AddError(fmt.Sprintf("can not cfeate log file in new directory: %s\n%s", logdir, err.Error()))
-	// 	WriteTask()
-	// 	return false //printError(strErr)
-	// }
-
-	// _muLogWrite.Lock()
-	// Close()
-	// _fileLog = fileLog
-	// _muLogWrite.Unlock()
-
-	return true
-}
-
 // May be used in log file names, when many instances write logs into one folder.
 // Every instance writes log into its own file to avoid concurrency problem.
 // To use it, add U in SetFileNameFormat() parameter.
@@ -460,7 +384,7 @@ func InstanceID() uuid.UUID {
 // A - abbreviation, D - date, T - time, U - instance ID (UUID)
 // f.e.:ADTU - SRV01.2022-12-12.15-03-12.b461cc28-8bab-4c19-8e25-f4c17faf5638.log
 // by default: 2022-12-12.log
-func SetFileNameFormat(fileNameFormat string) bool {
+func setFileNameFormat(fileNameFormat string) bool {
 	fileNameFormat = strings.TrimSpace(fileNameFormat)
 	if len(fileNameFormat) == 0 {
 		return true
@@ -483,48 +407,6 @@ func SetFileNameFormat(fileNameFormat string) bool {
 	return true
 }
 
-func Reconfigure() {
-	createLogFileAgain()
-}
-
-// A - abbreviation, D - date, T - time, U - instance ID (UUID)
-// f.e.:ADTU - SRV01.2022-12-12.15-03-12.b461cc28-8bab-4c19-8e25-f4c17faf5638.log
-// by default: 2022-12-12.log
-// period - period recreate log file: minute, hour, day
-// periodCount - count of period (10 min)
-// func SetFileNameFormatExt(fileNameFormat string, period string, periodCount int) bool {
-// 	fileNameFormat = strings.TrimSpace(fileNameFormat)
-// 	if len(fileNameFormat) == 0 {
-// 		return true
-// 	}
-// 	fnf := "D"
-// 	if _rxFileFormat.MatchString(fileNameFormat) {
-// 		fnf = fileNameFormat
-// 	} else {
-// 		AddError("fileNameFormat parameter is invalid: expected \"A\",\"D\" or \"T\" or their combination")
-// 		WriteTask()
-// 		return false
-// 	}
-// 	_fileNameFormat = nil
-// 	for _, r := range fnf {
-// 		_fileNameFormat = append(_fileNameFormat, string(r))
-// 	}
-
-// 	createLogFileAgain()
-
-// 	switch {
-// 	case period == "day":
-// 		_period = 111
-// 	case period == "hour":
-// 		_period = 11
-// 	case period == "minute":
-// 		_period = 1
-// 	}
-
-// 	_periodCount = periodCount
-// 	return true
-// }
-
 func IsServiceAbbreviation(srvabbr string) bool { return _rxSrvAbbr.MatchString(srvabbr) }
 
 func GetLogFilePath() string {
@@ -532,6 +414,47 @@ func GetLogFilePath() string {
 		return ""
 	}
 	return _fileLog.Name()
+}
+
+// change log directory, and create new log file in it (if it does not exist).
+// if not set, directory "logs" will be created next to the executable.
+func SetLogPath(logdir string) error {
+
+	if len(logdir) == 0 {
+		return errors.New("log path expected")
+	}
+
+	logdir = strings.TrimSpace(logdir)
+	if len(logdir) == 0 {
+		return errors.New("log path expected")
+	}
+	if logdir == _logPath {
+		return nil
+	}
+
+	if !strings.HasSuffix(logdir, PATH_SEPARATOR) {
+		logdir = logdir + PATH_SEPARATOR
+	}
+	err := validatePath(logdir, true)
+	if err != nil {
+		return err
+	}
+	_logPath = logdir
+
+	fileLog, _, err := createLogFile(logdir)
+	if err != nil {
+		fmt.Println("can not cfeate log file in new directory: " + logdir + "\nERROR:" + err.Error())
+		AddError(fmt.Sprintf("can not cfeate log file in new directory: %s\n%s", logdir, err.Error()))
+		WriteTask()
+		return err
+	}
+
+	_muLogWrite.Lock()
+	Close()
+	_fileLog = fileLog
+	_muLogWrite.Unlock()
+
+	return nil
 }
 
 // example: "^^^\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\r\nrq\r\nrs"

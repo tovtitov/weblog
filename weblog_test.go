@@ -18,7 +18,7 @@ func TestWriteCycle(t *testing.T) {
 
 	// "/Users/titov/Code/NewSecretProject/weblog/"
 	Init()
-	SetFileNameFormat("D")
+	setFileNameFormat("D")
 	for i := 0; i < 10; i++ {
 
 		msg := "very long test data " + strconv.Itoa(i)
@@ -33,11 +33,8 @@ func TestWriteRequest(t *testing.T) {
 	// "/Users/titov/Code/NewSecretProject/weblog/"
 	// InitF(
 	// 	"$$$\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\tuseragent\r\nrq\r\nrs")
-	SetLogFileCountLimit(10)
 	Init()
-	SetLogLevel("info")
 	SetLogPath("/Users/titov/Code/Licence")
-	Reconfigure()
 	log := NewLogger()
 
 	start := time.Now()
