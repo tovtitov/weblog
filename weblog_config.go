@@ -22,12 +22,7 @@ var (
 	_default_config_file_name        = `web.config`
 	NewLine                   string = "\n"
 	PathSeparator             string = string(os.PathSeparator)
-
-	isInitialized bool = false
-	isPreparing   bool = false
 )
-
-func IsInitialized() bool { return isInitialized }
 
 // split config file on map[string]string
 func configExtractProps(cfgstring string) (map[string]string, error) {
@@ -247,38 +242,22 @@ func initialize_config(configPath string) (err error) {
 		_recover(recover(), true)
 	}()
 
-	if isInitialized || isPreparing {
-		return
-	}
-	isPreparing = true
-
 	strConfig, err := configReadFile(configPath)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
 		// default faluess
-		isInitialized = true
-		isPreparing = false
 		err = nil
 		return
 	}
 
 	props, err := configExtractProps(strConfig)
 	if err != nil {
-		isPreparing = false
 		return err
 	}
 	if len(props) == 0 {
-		isPreparing = false
 		return errors.New("config file: no properties found")
 	}
 
-	err = configValidateAndAssignProps(props)
-
-	if err == nil {
-		isInitialized = true
-	}
-	isPreparing = false
-
-	return
+	return configValidateAndAssignProps(props)
 }
 
 func parseIntParam(key string, val string, min int, max int) (int, error) {
