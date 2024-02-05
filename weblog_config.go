@@ -139,7 +139,11 @@ func configValidateAndAssignProps(props map[string]string) (err error) {
 
 	strTmp := props["log_path"]
 	if len(strTmp) == 0 {
-		strTmp = getExePath() + "logs/"
+		if len(_logPath) == 0 {
+			strTmp = getExePath() + "logs/"
+		} else {
+			strTmp = _logPath
+		}
 	}
 	err = validatePath(strTmp, true)
 	if err != nil {
