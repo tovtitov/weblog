@@ -376,8 +376,8 @@ func joinStringBuffP(sb *bytes.Buffer, elem ...string) {
 func getDefaultLogPath() (string, error) {
 
 	var (
-		err             error
-		_logPathDefault string
+		err error
+		// logPathDefault string
 	)
 	if len(_logPath) == 0 {
 		_logPath, err = os.Executable()
@@ -385,19 +385,18 @@ func getDefaultLogPath() (string, error) {
 			fmt.Printf("can not get current path:  %s\n", err.Error())
 			return "", err
 		}
+		dir := filepath.Dir(_logPath)
+		if strings.EqualFold(dir, "/") {
+			_logPath = dir + "logs" + string(os.PathSeparator)
+		} else {
+			_logPath = dir + string(os.PathSeparator) + "logs" + string(os.PathSeparator)
+		}
+		err = os.MkdirAll(_logPath, os.ModePerm)
+		if err != nil {
+			return "", printError(fmt.Sprintf("can not create folder: %s\n%s", _logPath, err.Error()))
+		}
 	}
-
-	dir := filepath.Dir(_logPath)
-	if strings.EqualFold(dir, "/") {
-		_logPathDefault = dir + "logs" + string(os.PathSeparator)
-	} else {
-		_logPathDefault = dir + string(os.PathSeparator) + "logs" + string(os.PathSeparator)
-	}
-	err = os.MkdirAll(_logPathDefault, os.ModePerm)
-	if err != nil {
-		return "", printError(fmt.Sprintf("can not create folder: %s\n%s", _logPathDefault, err.Error()))
-	}
-	return _logPathDefault, nil
+	return _logPath, nil
 }
 
 func write(mode int) *Logger {
