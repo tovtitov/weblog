@@ -3,7 +3,7 @@ git commit -m ""
 git push -u origin --all
 go to: 
 github.com/tovtitov/weblog/commits
-go get github.com/tovtitov/weblog@2600566877631d0cd0ef20fab6b8c8c54255addd
+go get github.com/tovtitov/weblog@6487e2d3365007837ca640b5f88c6fb2784e220c
 
 
 все запросы без команды только отметки без тела

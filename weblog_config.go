@@ -98,6 +98,8 @@ func configReadFile(configFilePath string) (val string, err error) {
 		return "", err
 	}
 
+	fmt.Println("config file location: " + _configFilePath)
+
 	file, err = os.Open(_configFilePath)
 	defer func() {
 		if err = file.Close(); err != nil {
