@@ -19,7 +19,7 @@ const (
 
 var (
 	_configFilePath           string
-	_default_config_file_name        = `web.config`
+	_default_config_file_name        = `weblog.config`
 	NewLine                   string = "\n"
 	PathSeparator             string = string(os.PathSeparator)
 )
