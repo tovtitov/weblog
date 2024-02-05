@@ -255,16 +255,19 @@ func initialize_config(configPath string) (err error) {
 	strConfig, err := configReadFile(configPath)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
 		// default faluess
-
+		isInitialized = true
+		isPreparing = false
 		err = nil
 		return
 	}
 
 	props, err := configExtractProps(strConfig)
 	if err != nil {
-		return
+		isPreparing = false
+		return err
 	}
 	if len(props) == 0 {
+		isPreparing = false
 		return errors.New("config file: no properties found")
 	}
 
