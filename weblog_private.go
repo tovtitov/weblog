@@ -52,66 +52,6 @@ func (info *logFormatInfo) validate() error {
 	return nil
 }
 
-// in case, that a log file format is not predefined (f.e. it is defined in configuration)
-func parseLogFileHeader(format string) (*logFormatInfo, error) {
-
-	info := &logFormatInfo{}
-
-	format = strings.TrimSpace(format)
-	if len(format) == 0 {
-		return info, errors.New("log file format is missed")
-	}
-
-	arrLines := _rxLines.Split(format, -1)
-	// arrStr := strings.Split(format, "\n")
-	if len(arrLines) == 0 {
-		return info, errors.New("log file format is empty")
-	}
-
-	tabs := _rxSpaces.Split(arrLines[0], -1)
-	if len(tabs) == 0 {
-		return info, errors.New("log file format: no columns found")
-	}
-
-	// `^^^ err time cmd code latency ip rqct rsct reqid uid rqqs
-	// rq
-	// rs`
-	info.RecordDelimmiter = tabs[0]
-
-	var str string
-
-	for _, tab := range tabs {
-		str = strings.TrimSpace(tab)
-		if len(str) <= 25 && _rxTag.MatchString(str) {
-			info.Columns = append(info.Columns, str)
-			info.ColumnDelimiters = append(info.ColumnDelimiters, TAB)
-		}
-	}
-	if len(info.ColumnDelimiters) > 0 {
-		info.ColumnDelimiters[len(info.ColumnDelimiters)-1] = NEW_LINE
-	}
-
-	for _, tab := range arrLines {
-		str = strings.TrimSpace(tab)
-		if len(str) <= 25 && _rxTag.MatchString(str) {
-			info.Columns = append(info.Columns, str)
-			info.ColumnDelimiters = append(info.ColumnDelimiters, NEW_LINE)
-		}
-	}
-
-	if len(info.Columns) == 0 || len(info.ColumnDelimiters) == 0 {
-		return info, errors.New("log file format: no tags found")
-	}
-
-	err := info.validate()
-	if err == nil {
-		return info, err
-	} else {
-		return nil, err
-	}
-
-}
-
 func logTxt(msg *string) {
 
 	if !_isInitialized {

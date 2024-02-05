@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -154,6 +153,29 @@ func configValidateAndAssignProps(props map[string]string) (err error) {
 	}
 	_logPath = strTmp
 
+	strTmp = strings.TrimSpace(props["is_standalone"])
+	if len(strTmp) > 0 {
+		val, err := strconv.ParseBool(strTmp)
+		if err == nil {
+			_isStandalone = val
+		} else {
+			_isStandalone = true
+			return errors.New("config: is_standalone boolean expected: " + err.Error())
+		}
+	}
+
+	strTmp = strings.TrimSpace(props["service_abbr"])
+	if len(strTmp) > 0 {
+		if _rxSrvAbbr.MatchString(strTmp) {
+			_serviceAbbr = strTmp
+		} else {
+			if !_isStandalone {
+				printError("service name should by 5 letters in caps. F.e.: LOGER")
+				os.Exit(1)
+			}
+		}
+	}
+
 	strTmp = props["log_file_name_format"]
 	if len(strTmp) > 0 {
 		setFileNameFormat(strTmp)
@@ -205,6 +227,17 @@ func configValidateAndAssignProps(props map[string]string) (err error) {
 		setLogServerURL(strTmp)
 	}
 
+	strTmp = props["log_file_header_format"]
+	if len(strTmp) > 0 {
+		err = setLogFileFormat(strTmp)
+	} else {
+		err = setLogFileFormat(_log_format)
+	}
+	if err != nil {
+		fmt.Printf("can not parse log file header format: %s\n", err.Error())
+		os.Exit(1)
+	}
+
 	return nil
 }
 
@@ -221,9 +254,7 @@ func initialize_config(configPath string) (err error) {
 
 	strConfig, err := configReadFile(configPath)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
-		// default falues
-
-		// write default log file
+		// default faluess
 
 		err = nil
 		return
@@ -290,27 +321,4 @@ func getExePath() string {
 	}
 
 	return filepath.Dir(ex) + string(os.PathSeparator)
-}
-
-func validatePath(path string, withWrite bool) (err error) {
-	if len(path) == 0 {
-		return
-	}
-	err = os.MkdirAll(path, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	fi, err := os.Stat(path)
-	if err != nil || !fi.IsDir() {
-		return errors.New("config: invalid path: " + err.Error())
-	} else {
-		if withWrite {
-			f, err := ioutil.TempFile(path, "tmp")
-			if err != nil {
-				return errors.New("config: can not write test file in " + path + ": " + err.Error())
-			}
-			os.Remove(f.Name())
-		}
-	}
-	return
 }

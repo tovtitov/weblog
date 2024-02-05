@@ -1,0 +1,71 @@
+
+
+# ordered by logging data size: 
+# debug - (default) full info: query string, request body, response body, errors
+# trace - as "debug" but request body and response body are cut up to 1KB
+# info - just query string (default) end response HTTP code
+# error - full info only if error occures
+#log_level = debug
+
+
+# log files location. In this path folder /logs will be created.
+#By default folder /logs is created next to app file.
+#log_path=/opt/app/
+
+
+# file name format: 
+# A - service abbreviation, D - date, T - time, U - instance ID (UUID)
+# f.e.:ADTU - SRV01.2022-12-12.15-03-12.b461cc28-8bab-4c19-8e25-f4c17faf5638.log
+# by default: DT, f.e.: 2022-12-12.15-03-12.log
+#log_file_name_format = DT
+
+
+# max count of log files in /logs folder. -1 = unlimited (default).
+#log_max_files_count = -1
+
+
+# write only nesessary fields in log files.
+# column separator does matter. "\n" means that column value is placed on the new line.
+# "^^^" - one log record seperator (cause request/response values are multiline).
+# it can be arbitrary, but must be unique to identify the beginning of the string
+# "err" - error message.
+# "cmd" - application command.
+# "code" - HTTP response code.
+# "latency" - request execution time.
+# "ip" - client ip.
+# "srvc" - 5 char service abbreviation.
+# "rqct" - request content type.
+# "rsct" - response content type.
+# "reqid" - request id (UUID).
+# "uid" - user id (UUID).
+# "rqqs" - request query string.
+# "useragent" - obviously
+# "rq" - request body.
+# "rs" - response body.
+#log_file_header_format = ^^^\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\r\nrq\r\nrs
+
+
+# project name to cut stacktrace on errors (not mandatory)
+#log_mark = AppName
+
+
+
+########## using together with the log server ##########
+
+
+#url to log server, f.e.: 
+#server_url=http:#localhost
+
+
+#true - writes to file (default), false - writes to logserver (if server is inaccesable then writes to files). It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.
+#is_standalone = 1
+
+
+#service abbreviation (5 letters in caps, f.e.: LOGER). 
+Mandatory if writes to log server cause many different services may do it simultaneously.
+service_abbr = SRV01
+
+
+
+
+

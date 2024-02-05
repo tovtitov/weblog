@@ -60,7 +60,7 @@ const (
 
 var (
 	_log_mark          string // to reduce stacktrace path
-	_loglevel          int    = LOG_TRACE
+	_loglevel          int    = LOG_DEBUG
 	_logFileCountLimit int    = -1
 	_logPath           string
 	_fileNameFormat    []string  = []string{"D", "T"} // default file format
@@ -157,98 +157,20 @@ type Logger struct {
 
 // START | STOP
 
-// initializes just single appliaction log
-func Init() {
+// initializes appliaction log from weblog.config file, located next to app file, or with default settings.
+func Init() { _initialize("") }
 
-	_initialize("", "", true, "")
-
-}
-
-// initializes with weblog.config path (just path),
-// f.e. app may start within docker, its config (from host) says weblog.config location on host
+// initializes with path where weblog.config to be found.
+// f.e. app starts within docker and app calls this func to define host located weblog.config file.
 // and here you can set it from app.
-func InitC(configPath string) {
+func InitFromPath(configPath string) { _initialize(configPath) }
 
-	_initialize(configPath, "", true, "")
-
-}
-
-// - logHeaderFormat - example: "^^^\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\r\nrq\r\nrs"
-// where:
-// "^^^" - one log record seperator (cause multiline request/response values).
-// "err" - error message.
-// "cmd" - application command.
-// "code" - HTTP response code.
-// "latency" - request execution time.
-// "ip" - client ip.
-// "srvc" - 5 char service abbreviation.
-// "rqct" - request content type.
-// "rsct" - response content type.
-// "reqid" - request id (UUID).
-// "uid" - user id (UUID).
-// "rqqs" - request query string.
-// "useragent" - obviously
-// "rq" - request body.
-// "rs" - response body.
-// column separator does matter. "\n" means that column is placed on the new line.
-func InitCF(configPath string, logHeaderFormat string) {
-
-	_initialize(configPath, "", true, logHeaderFormat)
-
-}
-
-// initializes log feature when many services writes to the one server database log
-//
-// Parameters:
-//
-// - srvabbr: service abbreviation (5 letters in caps, f.e.: LOGER). Mandatory if isStandalone = false
-//
-// - isStandalone true - writes to file, writes to logserver (to files if server is inaccesable)
-func InitCMS(configPath string, srvabbr string, isStandalone bool) {
-
-	_initialize(configPath, srvabbr, isStandalone, "")
-
-}
-
-// initializes log feature
-//
-// Parameters:
-//
-// - srvabbr: service abbreviation (5 letters in caps, f.e.: LOGER). Mandatory if isStandalone = false
-//
-// - isStandalone true - writes to file, writes to logserver (to files if server is inaccesable)
-//
-// - logHeaderFormat - example: "^^^\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\r\nrq\r\nrs"
-// where:
-// "^^^" - one log record seperator (cause multiline request/response values).
-// "err" - error message.
-// "cmd" - application command.
-// "code" - HTTP response code.
-// "latency" - request execution time.
-// "ip" - client ip.
-// "srvc" - 5 char service abbreviation.
-// "rqct" - request content type.
-// "rsct" - response content type.
-// "reqid" - request id (UUID).
-// "uid" - user id (UUID).
-// "rqqs" - request query string.
-// "useragent" - obviously
-// "rq" - request body.
-// "rs" - response body.
-// column separator does matter. "\n" means that column is placed on the new line.
-func InitCMSF(configPath string, srvabbr string, isStandalone bool, logHeaderFormat string) {
-
-	_initialize(configPath, srvabbr, isStandalone, logHeaderFormat)
-
-}
-
-func _initialize(configPath string, srvabbr string, isStandalone bool, logHeaderFormat string) {
+func _initialize(configPath string) {
 
 	defer func() {
 		r := recover()
 		if r != nil {
-			fmt.Println("can not create logger instance: ", r)
-			os.Exit(1)
+			_recover("can not create logger instance: ", true)
 		}
 	}()
 
@@ -260,17 +182,6 @@ func _initialize(configPath string, srvabbr string, isStandalone bool, logHeader
 	if err != nil {
 		fmt.Printf("can not parse log config file: %s\n", err.Error())
 		os.Exit(1)
-	}
-
-	_isStandalone = isStandalone
-
-	if _rxSrvAbbr.MatchString(srvabbr) {
-		_serviceAbbr = srvabbr
-	} else {
-		if !_isStandalone {
-			printError("service name should by 5 letters in caps. F.e.: LOGER")
-			os.Exit(1)
-		}
 	}
 
 	_infoMessageBuf = &bytes.Buffer{}
@@ -309,15 +220,6 @@ func _initialize(configPath string, srvabbr string, isStandalone bool, logHeader
 		_fileLog = nil
 	}
 
-	if len(logHeaderFormat) > 0 {
-		err = setLogFileFormat(logHeaderFormat)
-	} else {
-		err = setLogFileFormat(_log_format)
-	}
-	if err != nil {
-		fmt.Printf("can not parse log file: %s\n", err.Error())
-		os.Exit(1)
-	}
 	_isInitialized = true
 
 }
@@ -347,65 +249,9 @@ func NewLogger() *Logger {
 func LogPath() string { return _logPath }
 
 // weblogsrv url
-func LogServerURL() string {
-	return SERVER_URL
-}
-func setLogServerURL(url string) bool {
-	url = strings.TrimSpace(url)
-	if len(url) == 0 {
-		return false
-	}
-	if _rxUrl.MatchString(url) {
-		SERVER_URL = url
-	} else {
-		if _rxIPv4v6.MatchString(url) {
-			SERVER_URL = url
-		} else {
-			AddError("web server URL is invalid")
-			WriteTask()
-			return false
-		}
-	}
-	return true
-}
+func LogServerURL() string { return SERVER_URL }
 
-// May be used in log file names, when many instances write logs into one folder.
-// Every instance writes log into its own file to avoid concurrency problem.
-// To use it, add U in SetFileNameFormat() parameter.
-// If it is not set, it is generated automatically on initialization.
-func SetInstanceID(srvid uuid.UUID) {
-	_uuidInstanceID = srvid
-}
-
-func InstanceID() uuid.UUID {
-	return _uuidInstanceID
-}
-
-// A - abbreviation, D - date, T - time, U - instance ID (UUID)
-// f.e.:ADTU - SRV01.2022-12-12.15-03-12.b461cc28-8bab-4c19-8e25-f4c17faf5638.log
-// by default: 2022-12-12.log
-func setFileNameFormat(fileNameFormat string) bool {
-	fileNameFormat = strings.TrimSpace(fileNameFormat)
-	if len(fileNameFormat) == 0 {
-		return true
-	}
-	fnf := "D"
-	if _rxFileFormat.MatchString(fileNameFormat) {
-		fnf = fileNameFormat
-	} else {
-		AddError("fileNameFormat parameter is invalid: expected \"A\",\"D\" or \"T\" or their combination")
-		WriteTask()
-		return false
-	}
-	_fileNameFormat = nil
-	for _, r := range fnf {
-		_fileNameFormat = append(_fileNameFormat, string(r))
-	}
-
-	// createLogFileAgain()
-
-	return true
-}
+func InstanceID() uuid.UUID { return _uuidInstanceID }
 
 func IsServiceAbbreviation(srvabbr string) bool { return _rxSrvAbbr.MatchString(srvabbr) }
 
@@ -457,57 +303,12 @@ func SetLogPath(logdir string) error {
 	return nil
 }
 
-// example: "^^^\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\r\nrq\r\nrs"
-// "^^^" - one log record seperator (cause multiline request/response values).
-// "err" - error message.
-// "cmd" - application command.
-// "code" - HTTP response code.
-// "latency" - request execution time.
-// "ip" - client ip.
-// "srvc" - 5 char service abbreviation.
-// "rqct" - request content type.
-// "rsct" - response content type.
-// "reqid" - request id (UUID).
-// "uid" - user id (UUID).
-// "rqqs" - request query string.
-// "useragent" - obviously
-// "rq" - request body.
-// "rs" - response body.
-// column separator does matter. "\n" means that column is placed on the new line.
-func setLogFileFormat(val string) error {
-
-	if len(val) == 0 {
-		return errors.New("empty param")
-	}
-
-	_log_format = NormalizeNewlines(val)
-	if len(_log_format) == 0 {
-		return errors.New("empty param after normalizing")
-	}
-
-	// When log a single record on server,
-	// empty line is the delimiter between format info and data.
-	// If the format info will be placed in the config file,
-	// this mandatory feature may be omitted by user.
-	if !strings.HasSuffix(_log_format, "\n\n") {
-		_log_format = _log_format + "\n\n"
-	}
-	// header := _log_format[:len(_log_format)-2]
-	info, err := parseLogFileHeader(_log_format)
-	if err != nil {
-		return fmt.Errorf("can not parse log file format: %s", err.Error())
-	}
-
-	_rowtags = info.Columns
-	_tagDelimiters = info.ColumnDelimiters
-	_recordDelimmiter = info.RecordDelimmiter
-	if _mapHeaders == nil {
-		_mapHeaders = make(map[string]*logFormatInfo)
-	}
-
-	_mapHeaders[_log_format] = info
-
-	return nil
+// May be used in log file names, when many instances write logs into one folder.
+// Every instance writes log into its own file to avoid concurrency problem.
+// To use it, add U in SetFileNameFormat() parameter.
+// If it is not set, it is generated automatically on initialization.
+func SetInstanceID(srvid uuid.UUID) {
+	_uuidInstanceID = srvid
 }
 
 // on application start / stop
