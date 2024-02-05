@@ -375,13 +375,19 @@ func joinStringBuffP(sb *bytes.Buffer, elem ...string) {
 // // extract to client because config, or internal test strings may be used
 func getDefaultLogPath() (string, error) {
 
-	ex, err := os.Executable()
-	if err != nil {
-		fmt.Printf("can not get current path:  %s\n", err.Error())
-		return "", err
+	var (
+		err             error
+		_logPathDefault string
+	)
+	if len(_logPath) == 0 {
+		_logPath, err = os.Executable()
+		if err != nil {
+			fmt.Printf("can not get current path:  %s\n", err.Error())
+			return "", err
+		}
 	}
-	var _logPathDefault string
-	dir := filepath.Dir(ex)
+
+	dir := filepath.Dir(_logPath)
 	if strings.EqualFold(dir, "/") {
 		_logPathDefault = dir + "logs" + string(os.PathSeparator)
 	} else {

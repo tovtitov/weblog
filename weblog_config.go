@@ -254,7 +254,7 @@ func initialize_config(configPath string) (err error) {
 		return err
 	}
 	if len(props) == 0 {
-		return errors.New("config file: no properties found")
+		return err
 	}
 
 	return configValidateAndAssignProps(props)
