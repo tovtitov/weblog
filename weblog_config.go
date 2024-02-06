@@ -250,7 +250,12 @@ func initialize_config(configPath string) (err error) {
 
 	strConfig, err := configReadFile(configPath)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
-		// default faluess
+		// default values
+		err = setLogFileFormat(_log_format)
+		if err != nil {
+			fmt.Printf("can not parse log file header format: %s\n", err.Error())
+			os.Exit(1)
+		}
 		err = nil
 		return
 	}
