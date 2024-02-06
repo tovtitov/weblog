@@ -261,11 +261,16 @@ func removeOldLogFiles(logpath string) {
 			continue
 		}
 
-		fitem := &file_item{}
-		fitem.Path = src
-		fitem.Modified = stat.ModTime()
-
-		fitems = append(fitems, fitem)
+		// delete empty files
+		diff := int(stat.Size()) - len(_log_format)
+		if -10 < diff && diff < 10 {
+			os.Remove(src)
+		} else {
+			fitem := &file_item{}
+			fitem.Path = src
+			fitem.Modified = stat.ModTime()
+			fitems = append(fitems, fitem)
+		}
 	}
 
 	// _logFileCountLimit == -1 - DO NOTHING
@@ -387,11 +392,14 @@ func getDefaultLogPath() (string, error) {
 		}
 	}
 	dir := filepath.Dir(_logPath)
-	if strings.EqualFold(dir, "/") {
-		_logPath = dir + "logs" + string(os.PathSeparator)
-	} else {
-		_logPath = dir + string(os.PathSeparator) + "logs" + string(os.PathSeparator)
+	if !strings.HasSuffix(_logPath, "/logs/") {
+		if strings.EqualFold(dir, "/") {
+			_logPath = dir + "logs" + string(os.PathSeparator)
+		} else {
+			_logPath = dir + string(os.PathSeparator) + "logs" + string(os.PathSeparator)
+		}
 	}
+
 	err = os.MkdirAll(_logPath, os.ModePerm)
 	if err != nil {
 		return "", printError(fmt.Sprintf("can not create folder: %s\n%s", _logPath, err.Error()))
