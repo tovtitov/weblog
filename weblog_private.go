@@ -385,17 +385,18 @@ func getDefaultLogPath() (string, error) {
 			fmt.Printf("can not get current path:  %s\n", err.Error())
 			return "", err
 		}
-		dir := filepath.Dir(_logPath)
-		if strings.EqualFold(dir, "/") {
-			_logPath = dir + "logs" + string(os.PathSeparator)
-		} else {
-			_logPath = dir + string(os.PathSeparator) + "logs" + string(os.PathSeparator)
-		}
-		err = os.MkdirAll(_logPath, os.ModePerm)
-		if err != nil {
-			return "", printError(fmt.Sprintf("can not create folder: %s\n%s", _logPath, err.Error()))
-		}
 	}
+	dir := filepath.Dir(_logPath)
+	if strings.EqualFold(dir, "/") {
+		_logPath = dir + "logs" + string(os.PathSeparator)
+	} else {
+		_logPath = dir + string(os.PathSeparator) + "logs" + string(os.PathSeparator)
+	}
+	err = os.MkdirAll(_logPath, os.ModePerm)
+	if err != nil {
+		return "", printError(fmt.Sprintf("can not create folder: %s\n%s", _logPath, err.Error()))
+	}
+
 	return _logPath, nil
 }
 
