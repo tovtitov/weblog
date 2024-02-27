@@ -94,11 +94,12 @@ func configReadFile(configFilePath string) (val string, err error) {
 	} else {
 		_configFilePath = getExePath() + _default_config_file_name
 	}
+
+	fmt.Println("config file location expected: " + _configFilePath)
+
 	if _, err = os.Stat(_configFilePath); err != nil {
 		return "", err
 	}
-
-	fmt.Println("config file location: " + _configFilePath)
 
 	file, err = os.Open(_configFilePath)
 	defer func() {

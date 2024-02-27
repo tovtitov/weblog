@@ -3,8 +3,19 @@ git commit -m ""
 git push -u origin --all
 go to: 
 github.com/tovtitov/weblog/commits
-go get github.com/tovtitov/weblog@7a0ea609f245b70d6ee5d9e1a5f8f7fd115da75d
+go get github.com/tovtitov/weblog@6c9e6b3bea54a9b18d8c647786f67a30a0872dfe
 
 
-все запросы без команды только отметки без тела
++++++++++ TODO: +++++++++
 
+SetLogPath() убрать
+SetUserAgentCommand() перенести в weblog.config
+передавать в инициализатор http.Request и http.Response. 
+заполяет поля:
+    - ip
+    - user-agent
+    - cookies (не логируются)
+    - headers (не логируются)
+    установка метки времени начала выполнения запроса
+    фикскация времени выполнения запроса при log.Write()
+    запись в http.Response(?)
