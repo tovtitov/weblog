@@ -124,6 +124,10 @@ func (w *Logger) SetUserAgentCommand(val string) {
 	w.useragent_cmd = val
 }
 
+func (w *Logger) SetLanguage(val string) { w.lang = val }
+
+func (w *Logger) Language() string { return w.lang }
+
 func (w *Logger) SetCommand(val string) {
 
 	intTmp := len(val)
@@ -314,6 +318,7 @@ func (w *Logger) IsRequestBinary() bool {
 	return w.is_request_binary
 }
 
+// deprecated. See SystemError() property
 func (w *Logger) Error() string {
 	return w.stacktraceBuffer.String()
 }

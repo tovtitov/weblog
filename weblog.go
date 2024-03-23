@@ -134,6 +134,7 @@ type Logger struct {
 	rqqs          string
 	useragent     string
 	useragent_cmd string
+	lang          string
 	// rq                 string
 	is_response_binary bool // for images
 	is_request_binary  bool // for images
