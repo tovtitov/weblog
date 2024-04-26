@@ -7,6 +7,7 @@ Uid from string to uuid, but latency remained as string
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -135,6 +136,7 @@ type Logger struct {
 	useragent     string
 	useragent_cmd string
 	lang          string
+	ctx           context.Context
 	// rq                 string
 	is_response_binary bool // for images
 	is_request_binary  bool // for images

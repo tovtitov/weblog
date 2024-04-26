@@ -2,6 +2,7 @@ package weblog
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"fmt"
 	"net/url"
@@ -126,7 +127,10 @@ func (w *Logger) SetUserAgentCommand(val string) {
 
 func (w *Logger) SetLanguage(val string) { w.lang = val }
 
-func (w *Logger) Language() string { return w.lang }
+func (w *Logger) SetContext(val context.Context) { w.ctx = val }
+
+func (w *Logger) Language() string         { return w.lang }
+func (w *Logger) Context() context.Context { return w.ctx }
 
 func (w *Logger) SetCommand(val string) {
 
@@ -689,10 +693,12 @@ func (w *Logger) Recover(r interface{}) {
 	switch r.(type) {
 	case string:
 		w.AddStacktrace(r.(string))
+		fmt.Println("on Recover: " + r.(string))
 	case error:
 		w.AddStacktrace(r.(error).Error())
+		fmt.Println("on Recover: " + r.(error).Error())
 	default:
 		w.AddStacktrace("unknown request fatal error")
+		fmt.Println("unknown request fatal error")
 	}
-	fmt.Println("on Recover: " + r.(string))
 }
