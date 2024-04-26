@@ -129,8 +129,13 @@ func (w *Logger) SetLanguage(val string) { w.lang = val }
 
 func (w *Logger) SetContext(val context.Context) { w.ctx = val }
 
-func (w *Logger) Language() string         { return w.lang }
-func (w *Logger) Context() context.Context { return w.ctx }
+func (w *Logger) Language() string { return w.lang }
+func (w *Logger) Context() context.Context {
+	if w.ctx == nil {
+		w.ctx = context.Background()
+	}
+	return w.ctx
+}
 
 func (w *Logger) SetCommand(val string) {
 
