@@ -156,6 +156,8 @@ type Logger struct {
 	CookiesRequest []*http.Cookie
 	// w.CookiesResponse = append(w.CookiesResponse, &http.Cookie{})
 	CookiesResponse []*http.Cookie
+
+	Storage map[string]any
 }
 
 // START | STOP
@@ -245,6 +247,8 @@ func NewLogger() *Logger {
 	w.loglevel = _loglevel
 	w.is_request_binary = false
 	w.is_response_binary = false
+
+	w.Storage = map[string]any{}
 
 	return w
 }

@@ -36,7 +36,7 @@ func TestWriteRequest(t *testing.T) {
 	Init()
 	SetLogPath("/Users/titov/Code/Licence")
 	log := NewLogger()
-
+	log.Storage = map[string]any{}
 	start := time.Now()
 
 	// time.Sleep(12 * time.Millisecond)
