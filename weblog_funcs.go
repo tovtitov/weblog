@@ -482,7 +482,7 @@ func (w *Logger) Clear() {
 // FUNCTIONS
 
 // writes request data to log after app execution
-func (w *Logger) WriteRequest() {
+func (w *Logger) WriteRequest(clearBase64 bool) {
 
 	var (
 		iserr       = w.stacktraceBuffer.Len() > 0
@@ -518,14 +518,13 @@ func (w *Logger) WriteRequest() {
 	if w.loglevel != LOG_INFO && len(w.cmd) > 0 {
 
 		if !w.is_request_binary {
-			RemoveBase64Content(w.responseBuffer)
-			RemoveBase64Content(w.requestBuffer)
-		}
-		strResponse = w.responseBuffer.String()
-		strReq = w.requestBuffer.String()
-		intResponseLen = len(strResponse)
-		intRequestLen = len(strReq)
-		if !w.is_request_binary {
+
+			if clearBase64 {
+				strReq = RemoveBase64Content(w.requestBuffer.String())
+			} else {
+				strReq = w.requestBuffer.String()
+			}
+			intRequestLen = len(strReq)
 
 			if !iserr && w.loglevel == LOG_TRACE && intRequestLen > MAX_INT_1KB {
 				sb.Grow(sb.Cap() + MAX_INT_1KB)
@@ -546,7 +545,16 @@ func (w *Logger) WriteRequest() {
 			intRequestLen = len(str)
 			strReq = str
 		}
+
 		if !w.is_response_binary {
+
+			if clearBase64 {
+				strResponse = RemoveBase64Content(w.responseBuffer.String())
+			} else {
+				strResponse = w.responseBuffer.String()
+			}
+			intResponseLen = len(strResponse)
+
 			// !iserr && removed because full html returned on 403
 			if w.loglevel == LOG_TRACE && intResponseLen > MAX_INT_1KB {
 				sb.Grow(MAX_INT_1KB)

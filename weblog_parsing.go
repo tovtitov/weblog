@@ -179,14 +179,12 @@ func ParseLogRecordString(logRec *string, returnObjectOnError bool) (*Logger, er
 
 }
 
-func RemoveBase64Content(buf *bytes.Buffer) {
+func RemoveBase64Content(str string) string {
 
-	if buf == nil {
-		return
+	if len(str) < 2048 {
+		return str
 	}
-	// if buf.Len() < 2048 {
-	// 	return
-	// }
+
 	// log := `,"gallery":["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAAAAAAD/1111",
 	// "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAAAAAAD/2222",
 	// "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAAAAAAD/3333"],
@@ -196,30 +194,25 @@ func RemoveBase64Content(buf *bytes.Buffer) {
 
 	// log := `,"gallery":["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAAAAAAD/4QBi...`
 
-	log := buf.String()
-
 	pos_long := 0
-	pos_curr := strings.Index(log[pos_long:], ";base64,")
+	pos_curr := strings.Index(str[pos_long:], ";base64,")
 	for pos_curr > -1 {
 		pos_curr += 8
-		pos2 := strings.Index(log[pos_curr:], `"`)
+		pos2 := strings.Index(str[pos_curr:], `"`)
 		if pos2 > -1 {
 			pos := pos_curr + pos2
-			img := log[pos_curr:pos]
-			log = strings.Replace(log, img, "...", 1)
+			img := str[pos_curr:pos]
+			str = strings.Replace(str, img, "...", 1)
 			pos_long = pos_curr + 4
-			pos_curr = strings.Index(log[pos_long:], ";base64,/")
+			pos_curr = strings.Index(str[pos_long:], ";base64,/")
 			if pos_curr > -1 {
 				pos_curr += pos_long
 			}
 		} else {
-			img := log[pos_curr:]
-			log = strings.Replace(log, img, "...", 1)
+			img := str[pos_curr:]
+			str = strings.Replace(str, img, "...", 1)
 		}
 	}
 
-	if len(log) < buf.Len() {
-		buf.Reset()
-		buf.WriteString(log)
-	}
+	return str
 }
