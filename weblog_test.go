@@ -34,7 +34,9 @@ func TestWriteRequest(t *testing.T) {
 	// InitF(
 	// 	"$$$\tdatetime\terr\tcmd\tcode\tlatency\tip\tsrvc\trqct\trsct\treqid\tuid\trqqs\tuseragent\r\nrq\r\nrs")
 	Init()
-	SetLogPath("/Users/titov/Code/Licence")
+	// SetLogPath("/Users/titov/Code/Licence")
+	SetLogPath("/Users/titov/Code/temp")
+
 	log := NewLogger()
 	log.Storage = map[string]any{}
 	start := time.Now()
@@ -49,9 +51,12 @@ func TestWriteRequest(t *testing.T) {
 	log.SetUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	log.SetUserAgentCommand("obj.action")
 	fmt.Println(log.ip)
-	log.SetRequest([]byte(`some 
-	multiline 
-	request`))
+	log.SetRequest([]byte(`,"gallery":["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAAAAAAD/4QBi",
+	"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAAAAAAD/2222",
+	"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAAAAAAD/3333"],
+	gallery2":["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAAAAAAD/4444",
+	"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAAAAAAD/5555",
+	"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAAAAAAD/6666"]`))
 	log.SetResponseBinary([]byte(`some 
 	multiline 
 	response`))

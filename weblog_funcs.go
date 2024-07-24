@@ -516,6 +516,11 @@ func (w *Logger) WriteRequest() {
 		intRequestLen  int
 	)
 	if w.loglevel != LOG_INFO && len(w.cmd) > 0 {
+
+		if !w.is_request_binary {
+			RemoveBase64Content(w.responseBuffer)
+			RemoveBase64Content(w.requestBuffer)
+		}
 		strResponse = w.responseBuffer.String()
 		strReq = w.requestBuffer.String()
 		intResponseLen = len(strResponse)
