@@ -358,9 +358,24 @@ func (w *Logger) AddToLog(val string) {
 	if sz == 0 {
 		return
 	}
+	buf := w.responseBuffer
+	buf.WriteString("\n")
+	buf.WriteString(val)
+	buf.WriteString("\n")
+}
+
+// add additional info log
+func (w *Logger) AddToLogError(val string) {
+
+	sz := len(val)
+	if sz == 0 {
+		return
+	}
 	buf := w.stacktraceBuffer
 	buf.WriteString("\n")
 	buf.WriteString(val)
+	buf.WriteString("\n")
+
 }
 
 // func (w *Logger) SetRequest(val string) {
@@ -515,8 +530,9 @@ func (w *Logger) WriteRequest(clearBase64 bool) {
 		intResponseLen int
 		intRequestLen  int
 	)
-	if w.loglevel != LOG_INFO && len(w.cmd) > 0 {
+	if w.loglevel == LOG_TRACE && len(w.cmd) > 0 {
 
+		// request
 		if !w.is_request_binary {
 
 			if clearBase64 {
@@ -546,6 +562,7 @@ func (w *Logger) WriteRequest(clearBase64 bool) {
 			strReq = str
 		}
 
+		// response
 		if !w.is_response_binary {
 
 			if clearBase64 {
@@ -575,11 +592,39 @@ func (w *Logger) WriteRequest(clearBase64 bool) {
 			intResponseLen = len(str)
 			strResponse = str
 		}
-	} else {
-		intResponseLen = w.responseBuffer.Len()
-		intRequestLen = w.requestBuffer.Len()
-		strResponse = strconv.Itoa(intResponseLen)
-		strReq = strconv.Itoa(intRequestLen)
+
+	} else if (w.loglevel == LOG_ERROR || w.loglevel == LOG_DEBUG) && len(w.cmd) > 0 {
+
+		if !w.is_request_binary {
+
+			intRequestLen = w.requestBuffer.Len()
+			strReq = w.requestBuffer.String()
+
+		} else {
+
+			strReq := strconv.Itoa(intRequestLen)
+			intRequestLen = len(strReq)
+		}
+
+		if !w.is_response_binary {
+
+			intResponseLen = w.responseBuffer.Len()
+			strResponse = w.responseBuffer.String()
+
+		} else {
+
+			strResponse := strconv.Itoa(intResponseLen)
+			intResponseLen = len(strResponse)
+
+		}
+
+	} else { // INFO
+
+		strReq := strconv.Itoa(intRequestLen)
+		strResponse := strconv.Itoa(intResponseLen)
+		intRequestLen = len(strReq)
+		intResponseLen = len(strResponse)
+
 	}
 
 	strIP := w.ip
@@ -599,7 +644,7 @@ func (w *Logger) WriteRequest(clearBase64 bool) {
 		case "datetime":
 			sb.WriteString(w.timeStr)
 		case "err":
-			if w.code >= 500 {
+			if w.code != 200 || w.stacktraceBuffer.Len() > 0 {
 				sb.WriteString(LBL_ERROR)
 			}
 		case "cmd":
@@ -640,7 +685,7 @@ func (w *Logger) WriteRequest(clearBase64 bool) {
 		case "rs":
 			sb.WriteString("rs:")
 			if intErrorLen > 0 {
-				sb.WriteString("error: \n")
+				sb.WriteString("error:")
 				sb.WriteString(strErr)
 				sb.WriteString("response: \n")
 			}

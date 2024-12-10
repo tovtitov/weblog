@@ -45,7 +45,7 @@ func TestWriteRequest(t *testing.T) {
 
 	elapsed := int64(time.Since(start)) / int64(time.Millisecond)
 	log.SetLatency(elapsed)
-
+	log.SetLogLevel("error") //info trace debug error
 	log.SetCommand("object.action")
 	log.SetIP("203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178, 203.0.113.195, 70.41.3.18, 150.172.238.178")
 	log.SetUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -65,6 +65,8 @@ func TestWriteRequest(t *testing.T) {
 	log.SetResponseCode(200)
 	log.SetRequestContentType("text/plain")
 	log.SetResponseContentType("application/json")
+
+	log.AddToLogError("to log value") // fill error buffer to test error log level
 
 	log.WriteRequest(true)
 	log.Reset()
