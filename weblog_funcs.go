@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -729,12 +730,16 @@ func (w *Logger) ClearResponse() {
 // for the log only, not for the client
 func (w *Logger) AddStacktrace(errmsg string) *Logger {
 
+	if len(errmsg) == 0 {
+		return w
+	}
 	buf := w.stacktraceBuffer
-	// buf.WriteString(NewLine)
-	if len(errmsg) > 0 {
-		buf.WriteString("ERROR:")
-		buf.WriteString(errmsg)
-		buf.WriteString(NEW_LINE)
+
+	buf.WriteString("ERROR:")
+	buf.WriteString(errmsg)
+	buf.WriteString(NEW_LINE)
+	if w.ResponseCode() == http.StatusOK {
+		w.SetResponseCode(http.StatusInternalServerError)
 	}
 	printStackTrace(buf)
 	buf.WriteString(NEW_LINE)
