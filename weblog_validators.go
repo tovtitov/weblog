@@ -123,6 +123,7 @@ func validatePath(path string, withWrite bool) (err error) {
 			if err != nil {
 				return errors.New("config: can not write test file in " + path + ": " + err.Error())
 			}
+			f.Close()
 			os.Remove(f.Name())
 		}
 	}
