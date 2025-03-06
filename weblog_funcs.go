@@ -783,6 +783,19 @@ func (w *Logger) RecoverNoLog(r interface{}) error {
 	return errors.New(msg)
 
 }
+
+// recovers from a panic and returns an error if it exists
+// usage: log.Recover("some place marker",recover())
+func (w *Logger) RecoverWithMarkNoLog(mark string, r interface{}) error {
+
+	if r == nil {
+		return nil
+	}
+	msg := mark + " panic: " + _recoverlog(r)
+	return errors.New(msg)
+
+}
+
 func _recoverlog(r interface{}) (msg string) {
 
 	if r == nil {
