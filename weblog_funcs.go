@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -749,45 +750,52 @@ func (w *Logger) AddStacktrace(errmsg string) *Logger {
 // for the log only, not for the client
 func (w *Logger) RawData() string { return w.recRawBuffer.String() }
 
-// recovering from a panic
+// recovers from a panic and logs the error if it exsits.
 // usage: log.Recover(recover())
 func (w *Logger) Recover(r interface{}) {
 
 	if r == nil {
 		return
 	}
-	switch r.(type) {
-	case string:
-		w.AddStacktrace(r.(string))
-		fmt.Println("on Recover: " + r.(string))
-	case error:
-		w.AddStacktrace(r.(error).Error())
-		fmt.Println("on Recover: " + r.(error).Error())
-	default:
-		w.AddStacktrace("unknown request fatal error")
-		fmt.Println("unknown request fatal error")
-	}
+	msg := "panic: " + _recoverlog(r)
+	w.AddStacktrace(msg)
 }
 
-// recovering from a panic and mark the panic place
+// recovers from a panic, marks the panic place and logs the error if it exsits.
 // usage: log.Recover("some place marker",recover())
 func (w *Logger) RecoverWithMark(mark string, r interface{}) {
 
 	if r == nil {
 		return
 	}
-	var msg string
+	msg := mark + " panic: " + _recoverlog(r)
+	w.AddStacktrace(msg)
+}
+
+// recovers from a panic and returns an error if it exists
+// usage: log.Recover("some place marker",recover())
+func (w *Logger) RecoverNoLog(r interface{}) error {
+
+	if r == nil {
+		return nil
+	}
+	msg := "panic: " + _recoverlog(r)
+	return errors.New(msg)
+
+}
+func _recoverlog(r interface{}) (msg string) {
+
+	if r == nil {
+		return ""
+	}
 	switch r.(type) {
 	case string:
 		msg = r.(string)
-		w.AddStacktrace(mark + ": " + msg)
-		fmt.Println("weblog recover: " + r.(string))
 	case error:
 		msg = r.(error).Error()
-		w.AddStacktrace(mark + ": " + msg)
-		fmt.Println("weblog recover: " + r.(error).Error())
 	default:
-		w.AddStacktrace(mark + " unknown request fatal error")
-		fmt.Println("unknown request fatal error")
+		msg = "unknown request fatal error"
 	}
+	fmt.Println(msg)
+	return
 }
