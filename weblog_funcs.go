@@ -749,9 +749,7 @@ func (w *Logger) AddStacktrace(errmsg string) *Logger {
 // for the log only, not for the client
 func (w *Logger) RawData() string { return w.recRawBuffer.String() }
 
-// recovering from a panic during query execution
-// without exiting the application
-// stack trace should not be included in response
+// recovering from a panic
 // usage: log.Recover(recover())
 func (w *Logger) Recover(r interface{}) {
 
@@ -767,6 +765,29 @@ func (w *Logger) Recover(r interface{}) {
 		fmt.Println("on Recover: " + r.(error).Error())
 	default:
 		w.AddStacktrace("unknown request fatal error")
+		fmt.Println("unknown request fatal error")
+	}
+}
+
+// recovering from a panic and mark the panic place
+// usage: log.Recover("some place marker",recover())
+func (w *Logger) RecoverWithMark(mark string, r interface{}) {
+
+	if r == nil {
+		return
+	}
+	var msg string
+	switch r.(type) {
+	case string:
+		msg = r.(string)
+		w.AddStacktrace(mark + ": " + msg)
+		fmt.Println("weblog recover: " + r.(string))
+	case error:
+		msg = r.(error).Error()
+		w.AddStacktrace(mark + ": " + msg)
+		fmt.Println("weblog recover: " + r.(error).Error())
+	default:
+		w.AddStacktrace(mark + " unknown request fatal error")
 		fmt.Println("unknown request fatal error")
 	}
 }
