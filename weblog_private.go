@@ -384,17 +384,17 @@ func getDefaultLogPath(configPath string) (string, error) {
 		err error
 		// logPathDefault string
 	)
-	if len(_logPath) == 0 {
-		if len(configPath) == 0 {
-			_logPath, err = os.Executable()
-			if err != nil {
-				fmt.Printf("can not get current path:  %s\n", err.Error())
-				return "", err
-			}
-		} else {
-			_logPath = configPath
+
+	if len(configPath) == 0 {
+		_logPath, err = os.Executable()
+		if err != nil {
+			fmt.Printf("can not get current path:  %s\n", err.Error())
+			return "", err
 		}
+	} else {
+		_logPath = configPath
 	}
+
 	dir := filepath.Dir(_logPath)
 	if !strings.HasSuffix(_logPath, "/logs/") {
 		if strings.EqualFold(dir, "/") {
