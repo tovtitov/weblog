@@ -378,17 +378,21 @@ func joinStringBuffP(sb *bytes.Buffer, elem ...string) {
 }
 
 // // extract to client because config, or internal test strings may be used
-func getDefaultLogPath() (string, error) {
+func getDefaultLogPath(configPath string) (string, error) {
 
 	var (
 		err error
 		// logPathDefault string
 	)
 	if len(_logPath) == 0 {
-		_logPath, err = os.Executable()
-		if err != nil {
-			fmt.Printf("can not get current path:  %s\n", err.Error())
-			return "", err
+		if len(configPath) == 0 {
+			_logPath, err = os.Executable()
+			if err != nil {
+				fmt.Printf("can not get current path:  %s\n", err.Error())
+				return "", err
+			}
+		} else {
+			_logPath = configPath
 		}
 	}
 	dir := filepath.Dir(_logPath)

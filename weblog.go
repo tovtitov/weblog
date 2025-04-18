@@ -192,14 +192,10 @@ func _initialize(configPath string) {
 	_infoMessageBuf = &bytes.Buffer{}
 	_errorMessageBuf = &bytes.Buffer{}
 
-	if len(configPath) > 0 {
-		_logPath = configPath
-	} else {
-		_logPath, err = getDefaultLogPath()
-		if err != nil {
-			printError("log folder not defined")
-			os.Exit(1)
-		}
+	_logPath, err = getDefaultLogPath(configPath)
+	if err != nil {
+		printError("log folder not defined")
+		os.Exit(1)
 	}
 
 	fmt.Println("default log path: [" + _logPath + "]")
